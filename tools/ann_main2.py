@@ -1,0 +1,255 @@
+"""Annotations: main block part 2 ($8F0B-$9FFF)
+text, input, ship/pod hardware sprites, sound effects, keyboard scan."""
+
+KEYS = ['DEL', 'RETURN', 'CRSR_RIGHT', 'F7', 'F1', 'F3', 'F5', 'CRSR_DOWN',
+        '3', 'W', 'A', '4', 'Z', 'S', 'E', 'LSHIFT', '5', 'R', 'D', '6', 'C', 'F', 'T', 'X',
+        '7', 'Y', 'G', '8', 'B', 'H', 'U', 'V', '9', 'I', 'J', '0', 'M', 'K', 'O', 'N',
+        'PLUS', 'P', 'L', 'MINUS', 'PERIOD', 'COLON', 'AT', 'COMMA', 'POUND', 'ASTERISK', 'SEMICOLON',
+        'HOME', 'RSHIFT', 'EQUALS', 'UP_ARROW', 'SLASH',
+        '1', 'LEFT_ARROW', 'CTRL', '2', 'SPACE', 'CBM', 'Q', 'RUN_STOP']
+
+USED_KEYS = {
+    'KEY_RSHIFT': 'thrust', 'KEY_LSHIFT': 'thrust', 'KEY_F5': 'pause', 'KEY_F7': 'resume',
+    'KEY_F1': 'sound off', 'KEY_F3': 'sound on', 'KEY_SPACE': 'shield / tractor beam, start game',
+    'KEY_A': 'rotate left', 'KEY_S': 'rotate right', 'KEY_RETURN': 'fire', 'KEY_RUN_STOP': 'abort game',
+}
+CONSTS = {'KEY_' + k: (i, USED_KEYS.get('KEY_' + k, '')) for i, k in enumerate(KEYS)}
+
+IMMEDIATES = {
+    0x95cf: 'KEY_RSHIFT', 0x95d6: 'KEY_LSHIFT', 0x975f: 'KEY_F5', 0x976e: 'KEY_F7', 0x977d: 'KEY_F1',
+    0x9786: 'KEY_F3', 0x97bb: 'KEY_SPACE', 0x9e0f: 'KEY_A', 0x9e18: 'KEY_S', 0xa9a7: 'KEY_RETURN',
+    0xb021: 'KEY_SPACE', 0xb277: 'KEY_RUN_STOP', 0xb282: 'KEY_SPACE', 0xb3ee: 'KEY_RUN_STOP',
+}
+
+LABELS = {
+    0x8f3b: 'plot_font_mask_byte',
+    0x8f8b: 'char_erase_loop',
+    # input
+    0x975f: 'test_for_pause',
+    0x977d: 'test_sound_keys',
+    0x9786: 'test_sound_on_key',
+    0x9791: 'test_sound_keys_return',
+    # ship / pod sprites
+    0x9792: 'ship_spr_y',
+    0x9793: 'ship_spr_x',
+    0x9794: 'ship_spr_x_msb',
+    0x9795: 'ship_spr_enable',
+    0x9796: 'ship_spr_frame',
+    0x9797: 'shield_colour',
+    0x9798: 'ship_colour',
+    0x9799: 'plot_ship_and_pod',
+    0x97a8: 'plot_ship_visible',
+    0x97ad: 'ship_input_shield_tractor',
+    0x97e0: 'plot_ship_sprite',
+    0x97f0: 'plot_ship_calc_y',
+    0x981d: 'plot_ship_calc_x',
+    0x984e: 'plot_ship_sprite_x',
+    0x9871: 'plot_ship_x_lt_256',
+    0x987f: 'plot_ship_sprite_y',
+    0x988f: 'plot_ship_set_frame',
+    0x98a0: 'plot_ship_test_hit',
+    0x9aaf: 'pod_colour',
+    0x9ab0: 'pod_spr_y',
+    0x9ab1: 'pod_spr_x',
+    0x9ab2: 'pod_spr_x_msb',
+    0x9ab3: 'pod_spr_enable',
+    0x9ab4: 'plot_pod_sprite',
+    0x9acb: 'plot_pod_test_attached',
+    0x9ad3: 'plot_pod_calc',
+    0x9b06: 'plot_pod_visible',
+    0x9b2e: 'plot_pod_x_ge_256',
+    0x9b37: 'plot_pod_enable',
+    0x9b42: 'plot_pod_return',
+    0x9b43: 'unused_rts',
+    # sound effects
+    0x9b44: 'sfx_volume',
+    0x9b45: 'sfx_explosion_timer',
+    0x9b46: 'sfx_engine_timer',
+    0x9b47: 'sfx_shield_timer',
+    0x9b48: 'sfx_own_gun_timer',
+    0x9b49: 'sfx_hostile_gun_timer',
+    0x9b4a: 'sfx_ping_timer',
+    0x9b4b: 'sfx_unused',
+    0x9b4d: 'sfx_v1_sweep',
+    0x9b4e: 'sfx_v1_freq',
+    0x9b4f: 'sfx_v2_pulse',
+    0x9b50: 'sfx_v2_pulse_sweep',
+    0x9b51: 'sfx_v2_freq_hi',
+    0x9b52: 'sfx_filter_lo',
+    0x9b53: 'sfx_filter_hi',
+    0x9b54: 'sfx_filter_route',
+    0x9b55: 'sfx_v1_ctrl',
+    0x9b56: 'sfx_v2_ctrl',
+    0x9b57: 'sound_update_return',
+    0x9b58: 'sound_update',
+    0x9b68: 'sound_volume_on',
+    0x9b70: 'sound_update_regs',
+    0x9ba5: 'sound_v1_sweep',
+    0x9bbd: 'sound_v1_sweep_down',
+    0x9bce: 'sound_v1_sweep_reverse',
+    0x9bd9: 'sound_engine_timer',
+    0x9beb: 'sound_shield_timer',
+    0x9c03: 'sound_own_gun',
+    0x9c15: 'sound_own_gun_fall',
+    0x9c27: 'sound_hostile_gun',
+    0x9c39: 'sound_pulse_sweep',
+    0x9c52: 'sound_pulse_sweep_down',
+    0x9c5c: 'sound_pulse_reverse',
+    0x9c67: 'sound_ping_timer',
+    0x9c74: 'sound_update_done',
+    0x9c75: 'sound_ping',
+    0x9c94: 'explosion_sound',
+    0x9cce: 'explosion_sound_return',
+    0x9ccf: 'run_engine',
+    0x9d06: 'run_engine_return',
+    0x9d07: 'shield_sound',
+    0x9d84: 'own_gun_sound_return',
+    0x9dc3: 'sound_return',
+    # keyboard
+    0x9dda: 'key_matrix',
+    0x9de2: 'scan_keyboard',
+    0x9df4: 'scan_keyboard_row',
+}
+
+ZP_COMMENTS = {}
+
+COMMENTS = {
+    0x9761: '',
+    0x976a: 'paused: wait for F7',
+    0x9775: 'resync game timer',
+    0x9784: 'F1: X = $FF -> mute',
+    0x978d: 'F3: sound on',
+    0x9799: 'calculate pod position from the tether',
+    0x97a8: 'ship colour: yellow',
+    0x97d0: 'shield on: shield colour',
+    0x97d9: 'shield hum',
+    0x97e0: 'sprite frame = ship angle (frames 0-31)',
+    0x97ea: '$FF = shield',
+    0x981d: 'Y * 2 (half vertical resolution)',
+    0x9850: 'X * 4: world X is in 4-pixel units',
+    0x985c: '+ left border',
+    0x9865: 'X > 255: set bit 7 of $D010 (sprite 7)',
+    0x9882: '+ top border',
+    0x988d: 'frame $20 = shield',
+    0x989d: 'and the pod',
+    0x98a4: 'enable sprite 7',
+    0x9ab8: 'sprite 6 frame $21 = pod',
+    0x9ae2: '+ top border',
+    0x9b19: '+ left border',
+    0x9b2e: 'X > 255: set bit 6 of $D010 (sprite 6)',
+    0x9b3d: 'enable sprite 6',
+    0x9b58: 'called every frame from the raster IRQ',
+    0x9b5a: 'no sound effects in demo mode',
+    0x9b60: 'muted: volume 0',
+    0x9b6b: 'volume + voice 3 off',
+    0x9b70: 'write the shadow registers to the SID',
+    0x9b8e: 'explosion: voice 1 noise, released after 30 frames',
+    0x9ba5: 'voice 1 frequency sweep (bounces between $64 and $C8)',
+    0x9bd9: 'engine: release voice 1 when timer ends',
+    0x9beb: 'shield: voice 2 pulse',
+    0x9c03: 'own gun: falling pitch on voice 2',
+    0x9c27: 'hostile gun: short voice 2 pulse',
+    0x9c39: 'voice 2 pulse width sweep',
+    0x9c67: 'ping: release voice 3 when timer ends',
+    0x9c75: 'voice 3 triangle "ping" (fuel / pod collected, countdown)',
+    0x9c77: 'triangle, gate off',
+    0x9c84: 'frequency $AA00',
+    0x9c8e: 'triangle, gate on',
+    0x9c98: 'noise, gate off',
+    0x9ca5: 'attack/decay',
+    0x9caa: 'sustain/release',
+    0x9cc1: 'noise, gate on',
+    0x9cef: 'attack/decay',
+    0x9cf4: 'sustain/release',
+    0x9cf9: 'noise, gate on',
+    0x9d22: '',
+    0x9d2c: '',
+    0x9d37: 'pulse, gate on',
+    0x9d46: 'pulse, gate off',
+    0x9d77: 'pulse, gate on',
+    0x9d98: 'frequency $0F00',
+    0x9de2: 'read the 8 keyboard matrix rows into key_matrix (1 = pressed)',
+}
+
+
+BLOCK_COMMENTS = {
+    0x975f: 'Pause (F5, resume with F7)',
+    0x977d: 'F1 = sound off, F3 = sound on',
+    0x9792: """Ship sprite (hardware sprite 7) shadow registers, written to the VIC
+by set_ship_and_pod_sprites""",
+    0x9799: """plot_ship_and_pod
+Positions the ship sprite (and the pod sprite via plot_pod_sprite) from the
+ship/pod midpoint, handles the shield key and ship colour.""",
+    0x97e0: 'Calculate ship sprite position and frame',
+    0x9aaf: 'Pod sprite (hardware sprite 6) shadow registers',
+    0x9ab4: 'Calculate pod sprite position (only while the pod is attached)',
+    0x9b44: """Sound effects (game only, silent in demo mode)
+Voice 1: explosion / engine, voice 2: guns / shield, voice 3: ping.
+The routines below set up a sound and a timer; sound_update (called every
+frame) runs the sweeps and releases the voices when their timers expire.""",
+    0x9c75: 'Voice 3 "ping"',
+    0x9c94: 'Explosion: voice 1 noise with a frequency sweep',
+    0x9ccf: 'Engine thrust: voice 1 noise',
+    0x9d07: 'Shield / tractor beam hum: voice 2 pulse',
+    0x9dda: 'Keyboard matrix (8 rows), scanned every frame. Bit set = key down.',
+    0x9de2: 'Keyboard scan',
+}
+
+LABELS.update({
+    0x9305: 'calc_text_colour_ptr',
+    0x9442: 'write_message_page_09',
+    0x9454: 'write_message_continue',
+    0x9470: 'write_message_return',
+    0x9471: 'write_mission',
+    0x948b: 'write_mission_colour',
+    0x9491: 'write_in',
+    0x94c5: 'write_bonus_colour',
+    0x9515: 'msg_mission',
+    0x9520: 'msg_in',
+    0x9525: 'msg_complete',
+    0x9530: 'msg_bonus',
+    0x9539: 'msg_failed',
+    0x9542: 'msg_no_bonus',
+    0x954d: 'msg_planet_destroyed',
+    0x9560: 'msg_reverse_gravity',
+    0x9572: 'msg_invisible_landscape',
+    0x0900: 'msg_game_over',
+    0x090c: 'msg_top_eight_thrusters',
+    0x0922: 'msg_congratulations',
+    0x0934: 'msg_enter_name',
+    0x094d: 'msg_press_space',
+    0x0968: 'msg_out_of_fuel',
+})
+
+OPERAND = {
+    0x9409: '#<msg_game_over', 0x9414: '#<msg_top_eight_thrusters', 0x941f: '#<msg_congratulations',
+    0x942a: '#<msg_enter_name', 0x9435: '#<msg_press_space', 0x9440: '#<msg_out_of_fuel',
+    0x9442: '#>msg_game_over',
+    0x9477: '#>msg_mission', 0x947b: '#<msg_mission',
+    0x9497: '#>msg_in', 0x949b: '#<msg_in',
+    0x94a8: '#>msg_complete', 0x94ac: '#<msg_complete',
+    0x94b8: '#>msg_bonus', 0x94bc: '#<msg_bonus',
+    0x94d1: '#>msg_failed', 0x94d5: '#<msg_failed',
+    0x94e1: '#>msg_no_bonus', 0x94e5: '#<msg_no_bonus',
+    0x94f0: '#>msg_planet_destroyed', 0x94f4: '#<msg_planet_destroyed',
+    0x94fe: '#>msg_reverse_gravity', 0x9502: '#<msg_reverse_gravity',
+    0x950c: '#>msg_invisible_landscape', 0x9510: '#<msg_invisible_landscape',
+}
+
+FORMATS = {
+    0x9515: ('text',), 0x9520: ('text',), 0x9525: ('text',), 0x9530: ('text',), 0x9539: ('text',),
+    0x9542: ('text',), 0x954d: ('text',), 0x9560: ('text',), 0x9572: ('text',),
+    0x090c: ('text',), 0x0922: ('text',), 0x0934: ('text',), 0x094d: ('text',), 0x0968: ('text',),
+}
+
+BLOCK_COMMENTS.update({
+    0x9305: 'Screen RAM (colour) address for the current text position: $5C00 + (ptr - $6000) / 8',
+    0x9446: """Params: X = LO byte of the message address (high byte in plot_string_ptr+1)
+Message format: screen position (2 bytes, 0,0 = continue at the current
+position), then the text, terminated by a byte with bit 7 set ($FF)""",
+    0x9515: 'End of level messages',
+})
+
+COMMENTS.update({
+    0x9442: 'messages at $09xx',
+})

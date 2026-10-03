@@ -1,0 +1,19 @@
+//------------------------------------------------------
+//------------------------------------------------------
+//         Kick Assembler v5.25 by Mads Nielsen         
+//------------------------------------------------------
+//------------------------------------------------------
+Output dir: /home/haymaker64/Homespace/dissassemblies/thrust/c64/src/../build
+parsing
+flex pass 1
+flex pass 2
+Output pass
+  relocator source is $3000=12288 (12288)
+  SYS address needs 5 digits=true (true)
+  music must end below $3000=true (true)
+  main code must end below $C000=true (true)
+Writing prg file: thrust.prg
+
+Made 4 asserts , 0 failed
+Writing Vice symbol file: thrust.vs
+Writing Symbol file: thrust.sym

@@ -1,0 +1,99 @@
+Level 0 (727 rows; map starts at world row $100)
+  object  0  pod stand       X $8f  Y $1bd
+  object  1  generator       X $a0  Y $1ab
+  object  2  fuel            X $6e  Y $1b3
+  object  3  gun up-right    X $7d  Y $1bb
+  restart 0  ship X $6c  Y $191
+
+Level 1 (850 rows; map starts at world row $100)
+  object  0  pod stand       X $7f  Y $238
+  object  1  generator       X $64  Y $1b1
+  object  2  fuel            X $8b  Y $23b
+  object  3  gun down-right  X $74  Y $214
+  object  4  gun down-left   X $9e  Y $20a
+  restart 0  ship X $6c  Y $191
+
+Level 2 (1000 rows; map starts at world row $100)
+  object  0  pod stand       X $4e  Y $2ce
+  object  1  generator       X $a4  Y $1c3
+  object  2  fuel            X $78  Y $1b1
+  object  3  fuel            X $97  Y $221
+  object  4  fuel            X $9d  Y $221
+  object  5  fuel            X $a3  Y $221
+  object  6  fuel            X $7d  Y $25e
+  object  7  fuel            X $67  Y $291
+  object  8  gun up-left     X $5d  Y $297
+  object  9  gun down-right  X $3e  Y $272
+  object 10  gun down-right  X $58  Y $248
+  object 11  gun up-left     X $ab  Y $21e
+  object 12  gun down-right  X $81  Y $20a
+  restart 0  ship X $6c  Y $191
+  restart 1  ship X $86  Y $22d
+  restart 2  ship X $48  Y $296
+
+Level 3 (1011 rows; map starts at world row $100)
+  object  0  pod stand       X $8e  Y $2d9
+  object  1  generator       X $5b  Y $240
+  object  2  door switch L   X $ac  Y $251
+  object  3  door switch L   X $ac  Y $287
+  object  4  fuel            X $92  Y $257
+  object  5  gun down-right  X $72  Y $1d0
+  object  6  gun up-right    X $5a  Y $201
+  object  7  gun down-right  X $5a  Y $216
+  object  8  gun down-left   X $78  Y $224
+  object  9  gun up-right    X $6d  Y $24c
+  object 10  gun down-right  X $8a  Y $292
+  object 11  gun up-left     X $a2  Y $2ba
+  restart 0  ship X $6c  Y $191
+  restart 1  ship X $7b  Y $1e6
+  restart 2  ship X $a1  Y $24a
+
+Level 4 (1191 rows; map starts at world row $100)
+  object  0  pod stand       X $a2  Y $38d
+  object  1  generator       X $8f  Y $229
+  object  2  door switch L   X $a4  Y $325
+  object  3  door switch R   X $98  Y $375
+  object  4  fuel            X $7c  Y $1c9
+  object  5  fuel            X $9a  Y $22b
+  object  6  fuel            X $a0  Y $22b
+  object  7  fuel            X $68  Y $287
+  object  8  fuel            X $69  Y $30a
+  object  9  fuel            X $6f  Y $30a
+  object 10  fuel            X $89  Y $335
+  object 11  fuel            X $8f  Y $335
+  object 12  gun down-right  X $72  Y $20d
+  object 13  gun down-left   X $a2  Y $20c
+  object 14  gun up-left     X $86  Y $283
+  object 15  gun up-right    X $5d  Y $304
+  object 16  gun down-left   X $8e  Y $300
+  object 17  gun up-right    X $7b  Y $32f
+  object 18  gun down-left   X $ac  Y $363
+  restart 0  ship X $6c  Y $191
+  restart 1  ship X $7b  Y $268
+  restart 2  ship X $6b  Y $2dc
+  restart 3  ship X $81  Y $315
+
+Level 5 (1309 rows; map starts at world row $100)
+  object  0  pod stand       X $9a  Y $3e4
+  object  1  generator       X $a9  Y $404
+  object  2  door switch R   X $a1  Y $398
+  object  3  door switch L   X $be  Y $35d
+  object  4  fuel            X $9a  Y $2f8
+  object  5  fuel            X $c1  Y $257
+  object  6  gun up-left     X $af  Y $3bf
+  object  7  gun down-right  X $9b  Y $3ac
+  object  8  gun down-right  X $a2  Y $386
+  object  9  gun down-left   X $9b  Y $32e
+  object 10  gun down-right  X $7b  Y $31f
+  object 11  gun up-left     X $ac  Y $2c1
+  object 12  gun down-left   X $ac  Y $2a8
+  object 13  gun up-left     X $ac  Y $267
+  object 14  gun down-left   X $ca  Y $23e
+  object 15  gun down-right  X $99  Y $239
+  object 16  gun down-left   X $99  Y $1cc
+  restart 0  ship X $6c  Y $191
+  restart 1  ship X $a2  Y $24b
+  restart 2  ship X $9a  Y $2d4
+  restart 3  ship X $87  Y $32a
+  restart 4  ship X $ae  Y $398
+
