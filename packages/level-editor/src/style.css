@@ -26,6 +26,10 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 #panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 0 0 40px; }
 #panel header, #panel section { padding: 12px 14px; border-bottom: 1px solid var(--line); }
 #panel h1 { font-size: 15px; margin: 0 0 2px; }
+#panel .title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.donate { background: #ff5fa2; color: #fff; border: 1px solid #ff5fa2; border-radius: 5px; padding: 3px 9px;
+  font-weight: 600; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.donate:hover { background: #ff7fb6; border-color: #ff7fb6; }
 #panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
   margin: 0 0 8px; font-weight: 600; }
 .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }

@@ -44,7 +44,10 @@ const C64READY_DEFAULT = 'https://hayesmaker.github.io/c64-ready/';
 export function mountPanel(root: HTMLElement, store: Store, view: View, player: PlayerOverlay): () => void {
   root.innerHTML = `
     <header>
-      <h1>Thrust level editor</h1>
+      <div class="title">
+        <h1>Thrust level editor</h1>
+        <a class="donate" href="https://ko-fi.com/c64cade" target="_blank" rel="noopener" title="Support the author on Ko-fi">♥ Donate</a>
+      </div>
       <div class="row">
         <button id="p-undo" title="Ctrl+Z">Undo</button>
         <button id="p-redo" title="Ctrl+Shift+Z">Redo</button>

@@ -1,5 +1,7 @@
 # Thrust (C64) — commented disassembly for KickAssembler
 
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Donate-ff5fa2?logo=ko-fi&logoColor=white)](https://ko-fi.com/c64cade)
+
 Thrust, Firebird 1986. Game by Jeremy C. Smith, music by Rob Hubbard.
 
 This folder holds a complete, re-assemblable disassembly of the C64 version.
