@@ -75,7 +75,7 @@
 .label Lb551=$b23b
 .label music_voice_reg_offset=$244f
 .label L90da=$90da
-.label gfx_load=$6969
+.label gfx_load=$698f
 .label Lac21=$a90b
 .label enter_new_high_score_name=$b211
 .label particle_screen_y=$72
@@ -340,6 +340,7 @@
 .label total_levels_played=$a4
 .label go_to_high_score=$af3e
 .label CHROUT=$ffd2
+.label write_title_press_space_colour=$bb9d
 .label bullet_index=$2d
 .label qr_byte=$2cb9
 .label main2_load=$6183
@@ -661,6 +662,7 @@
 .label plot_char_beep=$8f84
 .label set_level_ended=$b00a
 .label level_gravity_FRAC_table=$a5e1
+.label write_title_press_space_blank=$bba8
 .label music_porta_lo=$2476
 .label write_top_8_thrusters=$940e
 .label L9bba=$9bba
@@ -701,7 +703,7 @@
 .label teleport_ring_count=$86
 .label sprite_list_shift=$8b8f
 .label handle_generator=$8673
-.label relocator_load=$6938
+.label relocator_load=$695e
 .label L972f=$972f
 .label write_no_bonus=$94dc
 .label jump_fn_1_addr_HI=$a9e3
@@ -777,7 +779,7 @@
 .label create_explosion_loop=$9f0f
 .label set_status_bar_chars=$a4d2
 .label explosion_particle_type=$8d
-.label msg_title=$bba2
+.label msg_title=$bbc8
 .label terrain_left_wall_increment_LO=$84c2
 .label ship_input_rotate=$9e09
 .label plot_ship_return=$98b1
@@ -854,7 +856,7 @@
 .label landscape_draw_part_2=$831d
 .label clear_screen_ptr=$80
 .label terrain_left_wall_1_xpos=$84b4
-.label relocate=$6956
+.label relocate=$697c
 .label terrain_left_wall_2_index=$84b9
 .label terrain_draw_table_1=$9f7
 .label level_4_obj_type=$12cd
@@ -984,7 +986,7 @@
 .label music_note_length_left=$2458
 .label plot_line_bresenham_1_addr_HI=$a928
 .label calculate_player_position_from_midpoint=$9e77
-.label entry=$6938
+.label entry=$695e
 .label pod_window_xpos_INT=$52
 .label read_key_next_bit=$8e06
 .label plot_char_A=$8f4e
@@ -1010,7 +1012,7 @@
 .label L21fd=$21fd
 .label music_instruments=$2485
 .label draw_fuel_beam=$ab53
-.label filler2_load=$7669
+.label filler2_load=$768f
 .label screen_addr_hi_temp=$79
 .label SID_FC_LO=$d415
 .label object_sprite_coords=$8868
@@ -1205,7 +1207,7 @@
 .label L8ff0=$8ff0
 .label new_ship_ypos_INT_HI=$75
 .label SID_V1_SR=$d406
-.label main_end=$bbb8
+.label main_end=$bbde
 .label pod_spr_y=$9ab0
 .label pod_spr_x=$9ab1
 .label Lb3e1=$b0cb
@@ -1470,7 +1472,7 @@
 .label music_pattern_01=$2a50
 .label irq_no_planet_flash=$8a0e
 .label sfx_unused=$9b4b
-.label relocate_loop=$6958
+.label relocate_loop=$697e
 .label music_pattern_04=$2a8c
 .label L90b4=$90b4
 .label music_pattern_03=$2a6e

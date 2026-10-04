@@ -7445,16 +7445,50 @@ status_charset_data:
 // bytes in tab_0900) to make room for the title on row 16.
 // Messages: <bitmap address>, ASCII text, $FF. Bitmap $6000, 40x25 cells.
 // ----------------------------------------------------------------------------
+.function text_pos(row, col) { .return $6000 + row * 320 + col * 8 }
+.const PRESS_SPACE_ROW = 18                     // msg_press_space (tab_0900): $76b8
+.const PRESS_SPACE_COL = 7
+.const PRESS_SPACE_LEN = 24                     // "Press SPACE BAR to start" (the font has no ".")
 write_title_screen_texts:
     jsr plot_qr_code                            // title_qr.asm (in the music area)
     jsr write_press_spacebar
+    // Row 18 is below the hires/multicolour split (raster $B8, in row 16),
+    // so the text is shown in multicolour: "11" pixel pairs take the colour
+    // RAM (the text screen colour, as set_text_screen_colours uses) but
+    // "01" pairs the screen colour's high nibble, which write_message set
+    // to text_colour (the terrain colour). Set that high nibble to the text
+    // screen colour too ("10" pairs stay black, so the letters keep their
+    // shape) and blank lines 5-7 of the text cells (glyphs are 5 lines), so
+    // no terrain is left there in the text colour.
+    // (Level set-up rewrites the colours, so the demo is not affected.)
+    lda COLOR_RAM + $a0
+    asl
+    asl
+    asl
+    asl
+    ldx #PRESS_SPACE_LEN - 1
+write_title_press_space_colour:
+    sta $5400 + PRESS_SPACE_ROW * 40 + PRESS_SPACE_COL,x
+    sta $5c00 + PRESS_SPACE_ROW * 40 + PRESS_SPACE_COL,x
+    dex
+    bpl write_title_press_space_colour
+    ldx #(PRESS_SPACE_LEN - 1) * 8
+write_title_press_space_blank:
+    lda #$00
+    sta text_pos(PRESS_SPACE_ROW, PRESS_SPACE_COL) + 5,x
+    sta text_pos(PRESS_SPACE_ROW, PRESS_SPACE_COL) + 6,x
+    sta text_pos(PRESS_SPACE_ROW, PRESS_SPACE_COL) + 7,x
+    txa
+    sec
+    sbc #$08
+    tax
+    bcs write_title_press_space_blank
     lda #$07                                    // yellow, like "Game Over"
     sta font_byte_mask
     lda #>msg_title
     sta plot_string_ptr+1
     ldx #<msg_title
     jmp write_message
-.function text_pos(row, col) { .return $6000 + row * 320 + col * 8 }
 msg_title:
     .byte <text_pos(16, 10), >text_pos(16, 10)
     .encoding "ascii"
