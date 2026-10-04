@@ -23,7 +23,7 @@ After `init` has run. Determined from the code and from emulator access logs
 | `$1000-$1FFF` | **free** |
 | `$2000-$2CAC` | music driver and data (`$2CAD-$2FFF` unused) |
 | `$3000-$3002` | `JMP music_driver` |
-| `$3003-$3FFF` | **free** (only the start-up copy reads it) |
+| `$3003-$3FFF` | **free** at run time (only the start-up copy reads it; in the PRG it holds the main block, so it cannot hold extra data) |
 | `$4000-$4CBF` | sprites (pointers `$00-$32`) |
 | `$4CC0-$52FF` | **free**, inside the VIC bank (room for ~25 more sprites) |
 | `$5300-$53FF` | tether line sprites (generated, pointers `$4C-$4F`) |
@@ -38,6 +38,9 @@ After `init` has run. Determined from the code and from emulator access logs
 | `$C000-$CFFF` | **free** |
 | `$D000-$DFFF` | I/O |
 | `$E000-$FFFF` | KERNAL ROM (only its IRQ entry is used) |
+
+For placing new level data see "Memory for new levels" in
+`level_format.md`.
 
 Banking: `$01` = `$36` (BASIC ROM off, KERNAL and I/O on), VIC bank 1
 (`$4000-$7FFF`).

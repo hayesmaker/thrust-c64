@@ -68,6 +68,27 @@ Level 0, left wall: `$FF,$FF,$AB,$01,$0F,$01,$0C,$01,$FF` / `$00,$00,$00,$55,$01
 * row 426: X jumps to $55 (surface edge)
 * 15 rows sloping right by 1, a jump of $15, 12 rows of +1, a jump of $19 ...
 
+### Terrain table viewer
+
+`tools/terrainview.py` shows how each table entry turns into terrain. It
+renders one level zoomed in (only the rows where the walls change) and labels
+every run of each wall with its decimal values, e.g. `A4=15 B4=1` (15 rows,
++1 per row) or `C3=1 D3=183 (-73)` (steps of 128 or more are also shown
+signed). Each run is traced in its own colour along the wall it produces.
+The header lists the four raw tables; rulers show world Y (decimal and hex)
+and X; objects are drawn with their object numbers.
+
+```
+python3 tools/terrainview.py [level] [prg] [out.png] [zoom]
+python3 tools/terrainview.py 0          # -> docs/levels/level_0_terrain.png
+python3 tools/terrainview.py 4 build/thrust.prg level4.png 12   # bigger zoom
+```
+
+Zoom is pixels per world row (default 8; X uses twice that, keeping the
+game's 2:1 aspect). It needs Pillow and a built PRG + `.sym` file.
+
+![](levels/level_0_terrain.png)
+
 ## Objects
 
 Five parallel tables per level, indexed by object number:
@@ -188,8 +209,73 @@ To add level 6 (and so on):
 5. Change `cmp #$06` in `start_new_level` to the new number of levels.
 6. Doors: extend `tick_door_logic` if needed.
 
-Space: the original level data is about 1.5 KB for six levels. The main
-block may grow until `$BFFF` (checked by an `.assert`); there is also free
-RAM at `$1000-$1FFF`, `$3003-$3FFF` and `$C000-$CFFF` (see
-`memory_map.md`) — level tables can be placed there with their own
-`* =` / `.pseudopc` blocks if the main block gets full.
+See [Memory for new levels](#memory-for-new-levels) for where the tables
+can go and how many levels fit.
+
+## Memory for new levels
+
+### Cost of one level
+
+Measured from the current build (`build/thrust.sym`):
+
+| Part | All 6 levels | Per level |
+|------|--------------|-----------|
+| Terrain tables A-D (`$A03C-$A1ED`) | 434 bytes | ~30 (level 0) to ~110 (levels 4, 5) |
+| Object tables (`$A1EE-$A351`) | 356 bytes | ~20 to ~95 |
+| Restart tables (`$A879-$A8DE`) | 102 bytes | 6-30 |
+| One entry in each per-level lookup table | | ~30 (terrain pointers 8, object lookups 10, restart size + pointers 5, gravity 1, colours 6) |
+
+So a level costs **~180 bytes on average, ~270 for a complex one**. A door
+level also needs its own routine in `tick_door_logic` (~60-70 bytes of code).
+
+### Where the tables can go
+
+The PRG is one contiguous load from `$0801` to `$7F16`. A region is only
+easy to use if it is part of that load image *and* nothing overwrites it at
+run time (see `memory_map.md`):
+
+| Region | Free | Notes |
+|--------|------|-------|
+| `$BEA4-$BFFF` (end of main block) | 348 B | Easiest: just let the tables grow in place. The `.assert` "main code must end below $C000" catches overflow. ~1-2 levels. |
+| `$1000-$1FFF` | 4096 B | Easy: in the load image as the cruncher filler `filler1` (`$0817-$1FFF`, all `$FA`), and free at run time. ~16-24 levels. |
+| `$2CAD-$2FFF` | 851 B | After the music data, in the load image. ~3-4 levels. |
+| `$C000-$CFFF` | 4096 B | Free at run time but outside the load image. Needs a longer PRG plus a copy loop (or the relocator copying more). |
+| `$8100-$827F` | 384 B | Free at run time, outside the load image; needs a copy. |
+| `$4CC0-$52FF` | 1600 B | In the VIC bank; better kept for extra sprites. |
+| `$3003-$3FFF` | - | **Not usable**: free only after start-up. In the PRG it holds the main block before it is copied to `$8280`. |
+| `$7955-$7F16` | - | **Not usable**: `filler2`, in the load image, but it is the bitmap at run time. |
+
+Totals: ~4.4 KB without structural changes (main block end + `$1000-$1FFF`)
+= **about 16 complex or 24 average new levels**. Adding `$C000-$CFFF` and the
+small gaps gives ~9.4 KB = about 35-50 levels. Size is not a reason to move
+to a cartridge before that.
+
+### Using `$1000-$1FFF`
+
+The level tables are only reached through the pointer tables
+(`terrain_*_ptrs_LO/HI`, `level_*_lookup`, `level_reset_ptr*_table_LO/HI`),
+so the tables of a new level can live anywhere. To put them in the filler
+area, split the filler in `src/thrust.asm`:
+
+```
+filler1_load:
+    .fill $1000 - *, $fa            // was: .fill $17e9, $fa
+
+// level 6+ tables (no .pseudopc needed: they run where they load)
+terrain_data_level_6_A:
+    .byte $ff,$ff, ...
+    ...
+    .fill $2000 - *, $fa            // keep the music at $2000
+```
+
+KickAssembler reports an error if the block gets too big (it would overlap
+the music at `$2000`).
+
+### Other limits
+
+* `cmp #$06` in `start_new_level` sets the number of levels.
+* The word lookup tables are indexed by level × 2: at most 128 levels.
+* `mission_number` is a BCD counter that keeps counting across rounds and is
+  printed as two digits (`write_decimal_A`), so the display is not a limit
+  until mission 99.
+* Only the first 12 objects of a level can be fuel (see Objects).
