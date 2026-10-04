@@ -65,71 +65,94 @@ increasing rows. The tables are generated, never edited by hand:
 
 ### Phase 0 - setup
 - [x] Move `thrusty-levels/` to `packages/thrusty-levels/` (build verified unchanged).
-- [ ] Scaffold `packages/level-editor/` (Vite + TS + vitest).
-- [ ] Export the 6 original levels to JSON (`tools/level2json.py`, reading the PRG
-      + `.sym` like `terrainview.py`) as fixtures and starter templates.
-- [ ] Python reference dump of decoded wall X per row for each level (golden data).
+- [x] Scaffold `packages/level-editor/` (Vite + TS + vitest).
+- [x] Export the 6 original levels to JSON (`tools/level2json.py`, reading the PRG
+      + `.sym` like `terrainview.py`) -> `test/fixtures/original_levels.json`.
+- [x] Python reference dump of decoded wall X per row for each level (in the same JSON).
 
 ### Phase 1 - terrain model (no UI)
-- [ ] TS port of the decoder (`decodeWall(counts, steps, startX) → x[]`).
-- [ ] Encoder: vertices → A/B (C/D) tables, with staircase/Bresenham splitting.
-- [ ] Importer: tables → vertices.
-- [ ] Unit tests (vitest): decoder matches golden dumps; round trip for all levels;
+- [x] TS port of the decoder (`decodeWall(counts, steps, startX) → x[]`).
+- [x] Encoder: vertices → A/B (C/D) tables, with staircase/Bresenham splitting.
+- [x] Importer: tables → vertices (simplified: staircases become one steep segment,
+      only where the decoded rows stay identical).
+- [x] Unit tests (vitest): decoder matches golden dumps; round trip for all levels;
       long runs, wrap-around, steep slopes, ledges.
-- [ ] Asm reader/writer: parse labelled `.byte` blocks in `levels.asm` /
+- [x] Asm reader/writer: parse labelled `.byte` blocks in `levels.asm` /
       `level_tables.asm` into a level project, and patch them back in place.
       Test: parse → write with no edits reproduces both files byte for byte.
 
-### Phase 2 - editor UI (MVP: "drag points, see it, spit out tables")
-- [ ] Canvas view in game aspect (2:1), zoom + pan, grid snapping to world units,
-      rulers in hex and decimal (like terrainview).
-- [ ] Render rock by filling each row left of the left wall / right of the right
-      wall from the decoded X arrays — the same thing the game draws, so wrap,
-      crossings and closed caves look right.
-- [ ] Wall vertices as draggable handles; click on segment = insert, del/right-click
-      = remove; constrain row order; Shift = lock to a pure slope (0, ±1, ±2...).
-- [ ] Live redraw on every drag (decode is cheap: a few thousand rows).
-- [ ] Overlay: screen window (80 × 92) at the start position, to judge scale.
-- [ ] Side panel: live A/B/C/D tables, entry counts, bytes used.
-- [ ] Load: open/drop `levels.asm` + `level_tables.asm` (later: fetched from the API).
-- [ ] "Export" button: the terrain `.byte` lines for the level (copy to clipboard),
-      plus "download patched levels.asm".
-- [ ] Undo/redo, autosave to localStorage, save/load JSON.
+- [x] End-to-end test: edit level 0, build a temp copy with KickAss, read the PRG
+      back with `level2json.py` and compare (`test/kickass.test.ts`).
 
-### Phase 3 - objects, restart points, level settings
-- [ ] Object palette (guns ×4, fuel, pod stand, generator, switches) with
-      `obj_type_width/height` boxes; drag to place; snap Y to the surface.
-- [ ] Gun parameter editor: angle dial (0-28) + spread (1/3/7/15), shown as a cone.
-- [ ] Restart points: drag the ship marker; window auto-computed (editable).
-- [ ] Level settings: gravity (FRAC), the 6 colours (C64 palette picker), and
-      render in those colours.
-- [ ] Validation panel: object 0 is pod stand, ≤ 32 objects, fuel in first 12,
-      table ≤ 255 entries, run ≤ 254, objects inside rock, start point inside rock,
-      door levels (3-5) warning.
-- [ ] Export all object/restart/table blocks; level switcher for levels 0-5.
-- [ ] Memory budget meter against the free regions in level_format.md.
+### Phase 2 - editor UI (MVP: "drag points, see it, spit out tables") - done
+- [x] Canvas view in game aspect (2:1), zoom + pan, rulers in hex and decimal,
+      grid, X wrap seams; the world repeats horizontally.
+- [x] Rock drawn row by row from the decoded wall arrays (the game's rule).
+- [x] Draggable wall points; click a line = insert (on the line, no jump);
+      right-click / Del = remove; rows clamped between neighbours;
+      Shift = whole step per row; arrows nudge.
+- [x] Uneven segments (staircases) drawn dashed, with their table cost shown.
+- [x] Live redraw while dragging.
+- [x] Overlay: objects, restart points, screen window (window Y + $38, 80 × 92).
+- [x] Side panel: selected point (row/X inputs), live A/B/C/D tables, entry
+      counts, bytes vs original, >255 entries warning.
+- [x] Load: dev-server `GET /api/source` (read-only, packages/thrusty-levels/src),
+      "Open .asm files", drag and drop.
+- [x] Export: copy terrain `.byte` lines; download patched `levels.asm` /
+      `level_tables.asm` (only edited blocks change).
+- [x] Undo/redo, autosave to localStorage, save/open project JSON, revert level.
+- [x] Verified in headless Chrome: drag/insert/undo/level switch, autosave across
+      reload, and downloaded files built with KickAss decode to exactly what
+      the editor shows.
 
-### Phase 4 - Node build API
-- [ ] `editor/server`: small Node (http or Fastify) service, localhost only.
-- [ ] `POST /build` with the level project JSON →
-      copy `packages/thrusty-levels/src` into a temp dir, write generated `levels.asm`
-      (+ `level_tables.asm` when settings/restarts change), run
-      `java -jar /opt/KickAss.jar thrust.asm -vicesymbols -symbolfile`,
-      return `{ id, ok, log, errors[] }`. Never write into `packages/thrusty-levels/src`
-      unless asked (separate `POST /save` endpoint with a confirm in the UI).
-- [ ] `GET /builds/:id.prg` (+ `.sym`, `.vs`) with CORS for c64-ready.
-- [ ] Map KickAss errors (file:line) back to the level/table that caused them.
-- [ ] `GET /source` returns the current `levels.asm` + `level_tables.asm`, so the
-      editor opens the real mod files without a file picker.
+### Phase 3 - objects, restart points, level settings - done
+- [x] Object palette (all 9 types) with `obj_type_width/height` boxes; drag to
+      place; per-type snap to the terrain (rules measured from the originals:
+      every original object sits exactly where its rule puts it); Alt = free.
+- [x] Fuel is inserted before guns, the pod stand at 0; reorder ▲▼ and "Sort".
+- [x] Gun editor: direction (8 bases) + spread; firing arc drawn in the view
+      (base .. base + mask + 3 of 32, from the bullet start offset).
+- [x] Restart points: drag the ship; the window follows; "centre window"
+      (ship − $16, $64); kept in depth order; the start can't be deleted.
+- [x] Level settings: gravity and the 6 colours (C64 palette); terrain and
+      objects render in the level's colours.
+- [x] Checks panel (click to select): pod stand first, ≤ 32 objects, fuel in the
+      first 12, generator present, objects not resting on terrain, restarts out
+      of order or in rock, > 255 table entries, open cave bottom, door levels.
+      The original levels give no errors or warnings.
+- [x] Door overlay for levels 3-5 (hard-coded in `tick_door_logic`).
+- [x] Memory meter: all level data vs ~1240 bytes (892 original + 348 free).
+- [x] Browser test: objects/restarts/gravity/colours exported, built with
+      KickAss and read back from the PRG all match; other levels untouched.
 
-### Phase 5 - run in c64-ready
-- [ ] Quick path: "Play" opens `http://localhost:<c64-ready>/?game=http://localhost:<api>/builds/<id>.prg`.
-- [ ] Better: embed `C64Player` from the c64-ready package in an editor panel and
-      `loadGameData()` the built PRG — build-and-play without leaving the page.
-- [ ] "Test this level": after boot, use the `.sym` to poke `level_number`
-      (and optionally a restart point / infinite fuel) with `cpuWrite`, so play
-      starts on the edited level. May need a small debug hook in the mod source.
-- [ ] Optional: watch mode — rebuild on edit with debounce, hot-reload the emulator.
+### Phase 4 - Node build API - done
+- [x] `packages/level-editor/server/api.ts`: dependency-free Node handler, used as
+      middleware by the Vite dev server and by `server/index.ts` (standalone,
+      serves `dist/` + the API on 127.0.0.1:5180, `npm run serve`).
+- [x] `GET /api/source` (+ hash), `PUT /api/source` (409 if the files changed on
+      disk since loading; backup to `packages/level-editor/.backups/` first).
+- [x] `POST /api/build`: temp copy of `packages/thrusty-levels/src` + the two
+      generated files, KickAss, `{ ok, errors[], log, files }`; builds are queued
+      and the last 12 kept (in the system temp dir).
+- [x] `GET /api/builds/<id>/<file>`: thrust.prg / play.prg / .sym / .vs / log, with
+      CORS (+ Private-Network) so c64-ready on another origin can load them.
+- [x] KickAss errors parsed and shown with the table label of the line.
+- [x] `THRUST_MOD_SRC` / `THRUST_BACKUP_DIR` override the paths (used by tests).
+
+### Phase 5 - run in c64-ready - done
+- [x] `c64-ready` (npm, 2.5.0) embedded: `C64Player` + `CanvasRenderer` in an
+      overlay; a fresh player per run (autorun is reliable from a cold start);
+      `c64.wasm` and the audio worklet served under `/c64/` (dev middleware,
+      copied into `dist/c64/` by the build).
+- [x] Keyboard input mode (Thrust has no joystick code); editor shortcuts are
+      paused while the game is shown. Rebuild / Restart / Sound / Close.
+- [x] "Start the game on this level": the server patches `lda #$ff` before
+      `sta level_number` in the new-game code (found via the .sym) to level − 1
+      in `play.prg`. Verified: after Space, `level_number` in RAM is the level.
+- [x] "Open in c64-ready" (`?game=<build URL>`, base URL configurable) and
+      "Download PRG".
+- [ ] Optional: watch mode (rebuild on edit, debounced).
+- [ ] Optional: cheats for testing (infinite fuel/lives) via more PRG patches.
 
 ## After the MVP
 - [ ] New levels (7+): pointer/lookup table entries, `cmp #$06`, placement in

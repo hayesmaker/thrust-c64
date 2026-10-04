@@ -61,6 +61,9 @@ B:  $00,$00,$00, $55,$01, ...   ; then $AB rows down to the surface,
 So a single row with a big step makes a horizontal ledge, longer runs with
 small steps make slopes, step 0 makes a vertical wall. The last run should be
 `$FF` (the decoder keeps reading past the end of the table otherwise).
+Because a count of `$FF` (from entry 2 on) ends the wall, a single run can be
+at most 254 rows; longer stretches need two entries (a count of 0 means 256
+rows). Entry 1's count is never read: the sky run is always 255 rows.
 
 ### Slope angles
 
