@@ -68,11 +68,11 @@ terrain_data_level_5_C:
 terrain_data_level_5_D:
     .byte $00,$00,$00,$b7,$ff,$00,$01,$00,$01,$00,$e7,$ff,$00,$01,$00,$ff,$00,$eb,$00,$01,$00,$01,$ff,$00,$ff,$00,$0d,$00,$f1,$00  // $a1d0  right wall: X step per row
 level_0_obj_pos_X:
-    .byte $4e,$a0,$32,$40  // $a1ee  object X positions (world X, 4-pixel units)
+    .byte $4e,$a0,$34,$4b
 level_0_obj_pos_Y:
-    .byte $5d,$a4,$a4,$a6  // $a1f2  object Y positions (low byte)
+    .byte $5b,$a4,$a7,$29
 level_0_obj_pos_Y_EXT:
-    .byte $03,$01,$01,$01  // $a1f6  object Y positions (high byte)
+    .byte $03,$01,$01,$02
 level_0_obj_type:
     .byte $05,$06,$04,$00,$ff                   // $a1fa  object types, $FF terminated
 level_0_gun_param:
