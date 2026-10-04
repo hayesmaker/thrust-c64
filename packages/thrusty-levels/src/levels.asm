@@ -1,6 +1,7 @@
 // ============================================================================
 // levels.asm - Level terrain and object data (6 levels)
-// Included from thrust.asm. Runtime addresses $a03c-$a351
+// Included from thrust.asm at $1000-$1FFF (levels area; the address comments
+// on the lines below are from the original layout at $a03c-$a351)
 // ============================================================================
 
 // ----------------------------------------------------------------------------

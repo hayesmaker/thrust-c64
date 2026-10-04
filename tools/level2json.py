@@ -27,6 +27,8 @@ for ln in open(symfile):
 # the main block is copied from $3000 up to $8280 at start-up
 R = bytearray(65536)
 R[0x8280:0x10000] = mem[0x3000:0x3000 + 0x10000 - 0x8280]
+# $0801-$2FFF runs in place (thrusty-levels keeps level data at $1000)
+R[0x0801:0x3000] = mem[0x0801:0x3000]
 rd = lambda a: R[a]
 ptr = lambda t, i: rd(sym[t + '_LO'] + i) | rd(sym[t + '_HI'] + i) << 8
 word = lambda t, i: rd(sym[t] + i * 2) | rd(sym[t] + i * 2 + 1) << 8

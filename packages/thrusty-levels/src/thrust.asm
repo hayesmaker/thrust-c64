@@ -16,6 +16,8 @@
 // program is then relocated: each section below is assembled at its LOAD address
 // but labelled with its RUNTIME address via .pseudopc.
 //
+//    load $1000-$1FFF  -> $1000  terrain + object tables, levels.asm (runs in place;
+//                                thrusty-levels: moved out of the main block)
 //    load $2000-$2FFF  -> $2000  music driver (runs in place)
 //    load $3000-$3002  -> $3000  JMP music_driver (runs in place)
 //    load $3003-$6C23  -> $8283  main game code + data (relocator copies $3000-$6CFF to $8280)
@@ -477,11 +479,22 @@ basic_end:
     .word $0000                                 // end of program
 
 // ============================================================================
-// filler1  (load $0817-$1fff, runtime $0817-$1fff)
-// Unused filler ($FA) left by the cruncher
+// filler1  (load $0817-$0fff) + level data area (load/runtime $1000-$1fff)
+// The cruncher left $0817-$1FFF as filler ($FA). $1000-$1FFF is free at run
+// time and is not moved by the relocator, so thrusty-levels keeps the terrain
+// and object tables (levels.asm) there: 4 KB for level data instead of the few
+// hundred bytes left in the main block. The tables are only reached through
+// the pointer tables in level_tables.asm, so they can live anywhere.
 // ============================================================================
+.const LEVELS_AREA_START = $1000
+.const LEVELS_AREA_END   = $2000
 filler1_load:
-    .fill $17e9, $fa
+    .fill LEVELS_AREA_START - *, $fa
+levels_area:
+    #import "levels.asm"
+levels_area_end:
+    .errorif levels_area_end > LEVELS_AREA_END, "levels.asm is " + (levels_area_end - LEVELS_AREA_END) + " bytes too big for the levels area $" + toHexString(LEVELS_AREA_START) + "-$" + toHexString(LEVELS_AREA_END - 1)
+    .fill LEVELS_AREA_END - levels_area_end, $fa
 
 // ============================================================================
 // music  (load $2000-$2fff, runtime $2000-$2fff)
@@ -4542,7 +4555,7 @@ debug_print_hex_digit_2:
     pla                                         // $a03a  
     rts                                         // $a03b  
 
-    #import "levels.asm"
+    // (thrusty-levels: levels.asm was imported here; it now lives at $1000)
 level_obj_flags:
     .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $a352  
     .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $a362  
@@ -7494,4 +7507,6 @@ filler2_load:
 .assert "relocator source is $3000", music_stub_load, $3000
 .assert "SYS address needs 5 digits", entry >= 10000, true
 .assert "music must end below $3000", music_stub_load <= $3000, true
-.assert "main code must end below $C000", main3_load + RELOC_OFFSET + (relocator_load - main3_load) <= $c000, true
+// .errorif (not .assert): a failed .assert still writes the PRG
+.label main_end = main3_load + RELOC_OFFSET + (relocator_load - main3_load)
+.errorif main_end > $c000, "main code + level_tables.asm end at $" + toHexString(main_end) + ": " + (main_end - $c000) + " bytes past $C000"

@@ -18,6 +18,24 @@ format and where new levels fit in memory.
 Names and comments added to the main generator later will not appear here
 automatically.
 
+## Memory layout (differs from the original)
+
+`levels.asm` (terrain + object tables) is assembled at `$1000-$1FFF` instead
+of inside the main block: that area is free at run time, is part of the load
+image (it was cruncher filler) and is not moved by the relocator. All level
+data is reached through the pointer tables, so nothing else changed.
+
+| Data | Where | Room |
+|------|-------|------|
+| `levels.asm` (terrain, objects) | `$1000-$1FFF` (`LEVELS_AREA_START/END`) | 4096 bytes (842 used) |
+| `level_tables.asm` (restart points, pointers, colours, gravity) | main block, must end below `$C000` | 1138 bytes free |
+
+Both limits are `.errorif` checks in `thrust.asm`, so an overflow stops the
+build with a message such as `levels.asm is 46 bytes too big for the levels
+area $1000-$1fff`. (KickAssembler's `.assert` only prints a warning and still
+writes the PRG.) The level editor shows both areas and warns when either gets
+tight.
+
 ## examples/
 
 * `levels_slope_test.asm` - `levels.asm` with level 0 replaced by the slope

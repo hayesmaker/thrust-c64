@@ -294,6 +294,15 @@ terrain_data_level_6_A:
 KickAssembler reports an error if the block gets too big (it would overlap
 the music at `$2000`).
 
+### thrusty-levels does this
+
+`packages/thrusty-levels` keeps `levels.asm` at `$1000-$1FFF` (see its
+README): 4 KB for terrain and objects, and the 790 bytes they used free up in
+the main block for restart tables. Its layout checks use `.errorif`: a failed
+`.assert` in KickAssembler only prints `ERROR IN ASSERTION` and still writes
+the PRG (exit code 0), so in this source (`src/thrust.asm`) the
+"main code must end below $C000" check does not stop `./build.sh`.
+
 ### Other limits
 
 * `cmp #$06` in `start_new_level` sets the number of levels.

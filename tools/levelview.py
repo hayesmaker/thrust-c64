@@ -37,6 +37,8 @@ S = lambda n, default: sym.get(n, default)
 # the main block is copied from $3000 up to $8280 at start-up
 R = bytearray(65536)
 R[0x8280:0x10000] = mem[0x3000:0x3000 + 0x10000 - 0x8280]
+# $0801-$2FFF runs in place (thrusty-levels keeps level data at $1000)
+R[0x0801:0x3000] = mem[0x0801:0x3000]
 
 
 def rd(a):
