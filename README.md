@@ -29,7 +29,8 @@ This folder holds a complete, re-assemblable disassembly of the C64 version.
 | `docs/memory_map.md` | Run-time memory map, free RAM |
 | `docs/levels/` | Maps of all 6 levels rendered from the data (`tools/levelview.py`) |
 | `tools/` | The scripts used to produce the disassembly (see below) |
-| `thrusty-levels/` | Modded levels: hand-edited copy of the source, not touched by `regen.sh` (see `thrusty-levels/README.md`) |
+| `packages/thrusty-levels/` | Modded levels: hand-edited copy of the source, not touched by `regen.sh` (see `packages/thrusty-levels/README.md`) |
+| `packages/level-editor/` | Web level editor (in progress, see `docs/level_editor_plan.md`) |
 
 ## How the program is laid out
 

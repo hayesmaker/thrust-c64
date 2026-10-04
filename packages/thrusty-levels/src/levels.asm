@@ -19,13 +19,13 @@
 // Level 0 terrain
 // ----------------------------------------------------------------------------
 terrain_data_level_0_A:
-    .byte $ff,$ff,$ab,$01,$0f,$01,$0c,$01,$ff   // $a03c  left wall: run lengths
+    .byte $ff,$ff,$af,$01,$0b,$3c,$17,$14,$17,$3c,$3c,$1f,$17,$14,$17,$1f,$01,$10,$14,$10,$01,$ff
 terrain_data_level_0_B:
-    .byte $00,$00,$00,$55,$01,$15,$01,$19,$00   // $a045  left wall: X step per row
+    .byte $00,$00,$00,$4b,$01,$00,$ff,$00,$01,$00,$01,$00,$ff,$00,$01,$00,$b4,$ff,$00,$01,$14,$00
 terrain_data_level_0_C:
-    .byte $ff,$ff,$ab,$01,$09,$01,$ff           // $a04e  right wall: run lengths
+    .byte $ff,$ff,$af,$01,$17,$3c,$11,$15,$11,$23,$3c,$3f,$11,$15,$11,$43,$01,$03,$10,$ff  
 terrain_data_level_0_D:
-    .byte $00,$00,$00,$b7,$ff,$f1,$00           // $a055  right wall: X step per row
+    .byte $00,$00,$00,$86,$ff,$00,$01,$00,$ff,$00,$01,$00,$01,$00,$ff,$00,$c0,$00,$ff,$00
 terrain_data_level_1_A:
     .byte $ff,$ff,$af,$01,$0b,$01,$17,$36,$17,$14,$0f,$01,$ff  // $a05c  left wall: run lengths
 terrain_data_level_1_B:
@@ -67,11 +67,11 @@ terrain_data_level_5_C:
 terrain_data_level_5_D:
     .byte $00,$00,$00,$b7,$ff,$00,$01,$00,$01,$00,$e7,$ff,$00,$01,$00,$ff,$00,$eb,$00,$01,$00,$01,$ff,$00,$ff,$00,$0d,$00,$f1,$00  // $a1d0  right wall: X step per row
 level_0_obj_pos_X:
-    .byte $8f,$a0,$6e,$7d                       // $a1ee  object X positions (world X, 4-pixel units)
+    .byte $4e,$a0,$32,$40  // $a1ee  object X positions (world X, 4-pixel units)
 level_0_obj_pos_Y:
-    .byte $bd,$ab,$b3,$bb                       // $a1f2  object Y positions (low byte)
+    .byte $5d,$a4,$a4,$a6  // $a1f2  object Y positions (low byte)
 level_0_obj_pos_Y_EXT:
-    .byte $01,$01,$01,$01                       // $a1f6  object Y positions (high byte)
+    .byte $03,$01,$01,$01  // $a1f6  object Y positions (high byte)
 level_0_obj_type:
     .byte $05,$06,$04,$00,$ff                   // $a1fa  object types, $FF terminated
 level_0_gun_param:
