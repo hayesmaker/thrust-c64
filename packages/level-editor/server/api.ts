@@ -57,13 +57,35 @@ export function sourceHash(levelsAsm: string, tablesAsm: string): string {
   return createHash('sha1').update(levelsAsm).update('\0').update(tablesAsm).digest('hex').slice(0, 16);
 }
 
-/** KickAssembler reports "Error: <message>" then "at line N, column C in <file>". */
+/** KickAssembler reports "Error: <message>" then "at line N, column C in <file>".
+ *  A failed .assert only prints "<name>=<value> (<expected>) -- ERROR IN ASSERTION!!!"
+ *  and still writes the PRG, so those count as errors too. */
 export function parseKickAssErrors(log: string): BuildError[] {
   const out: BuildError[] = [];
   const re = /Error: (.+)\r?\n\s*at line (\d+), column (\d+) in (\S+)/g;
   for (let m = re.exec(log); m; m = re.exec(log))
     out.push({ message: m[1].trim(), line: Number(m[2]), column: Number(m[3]), file: m[4] });
+  const as = /^\s*(.+?)=\S* \(\S*\) -- ERROR IN ASSERTION!!!/gm;
+  for (let m = as.exec(log); m; m = as.exec(log))
+    out.push({ message: `assertion failed: ${m[1].trim()}`, line: 0, column: 0, file: 'thrust.asm' });
   return out;
+}
+
+/** Where the mod keeps its level data. thrusty-levels puts levels.asm in its
+ *  own area (LEVELS_AREA_START/END in thrust.asm); otherwise it is in the
+ *  main block like the original game. */
+export interface Layout {
+  levelsArea: { start: number; end: number } | null;
+}
+
+export function readLayout(thrustAsm: string): Layout {
+  const c = (name: string) => {
+    const m = new RegExp(`^\\.const\\s+${name}\\s*=\\s*\\$([0-9a-fA-F]+)`, 'm').exec(thrustAsm);
+    return m ? parseInt(m[1], 16) : null;
+  };
+  const start = c('LEVELS_AREA_START');
+  const end = c('LEVELS_AREA_END');
+  return { levelsArea: start !== null && end !== null && end > start ? { start, end } : null };
 }
 
 /** Make a PRG start on `level`: a new game does `sta total_levels_played /
@@ -128,8 +150,9 @@ export function createApi(o: ApiOptions) {
           const log = `${stdout}${stderr}${err && !stdout && !stderr ? String(err) : ''}`;
           writeFileSync(join(out, 'kickass.log'), log);
           const prgPath = join(out, 'thrust.prg');
-          const ok = !err && existsSync(prgPath);
-          const res: BuildResult = { id, ok, errors: parseKickAssErrors(log), log, ms: 0, files: ['kickass.log'], startLevel: null };
+          const errors = parseKickAssErrors(log);
+          const ok = !err && existsSync(prgPath) && errors.length === 0;
+          const res: BuildResult = { id, ok, errors, log, ms: 0, files: ['kickass.log'], startLevel: null };
           if (ok) {
             const prg = readFileSync(prgPath);
             res.prgBytes = prg.length;
@@ -159,7 +182,8 @@ export function createApi(o: ApiOptions) {
     if (!url.pathname.startsWith('/api/')) return next ? next() : notFound(res);
     try {
       if (url.pathname === '/api/source' && req.method === 'GET') {
-        return json(res, 200, { name: 'packages/thrusty-levels/src', ...readSource() });
+        const layout = readLayout(readFileSync(join(o.modDir, 'thrust.asm'), 'utf8'));
+        return json(res, 200, { name: 'packages/thrusty-levels/src', ...readSource(), layout });
       }
       if (url.pathname === '/api/source' && req.method === 'PUT') {
         const body = await readJson(req);

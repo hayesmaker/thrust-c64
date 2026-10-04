@@ -1,6 +1,7 @@
 // Editor state: the project, current level, selection, undo/redo, autosave.
 
 import { type Level, type Project, decodeLevel, levelRows, loadProject } from '../model/level';
+import { type Layout } from '../model/validate';
 
 export type Side = 'left' | 'right';
 
@@ -20,6 +21,7 @@ export const ROWS_MARGIN = 300;
 interface Saved {
   sourceName: string;
   sourceHash?: string | null;
+  layout?: Layout | null;
   levelsAsm: string;
   tablesAsm: string;
   levels: Level[];
@@ -38,6 +40,8 @@ export class Store {
   sourceHash: string | null = null;
   /** Set while the emulator has the keyboard: editor shortcuts are off. */
   inputPaused = false;
+  /** Where the mod keeps level data (from the server; null = original layout). */
+  layout: Layout | null = null;
   /** Decoded wall X per row for the current level (mod 256). */
   decoded: { left: number[]; right: number[] } = { left: [], right: [] };
 
@@ -145,13 +149,14 @@ export class Store {
 
   toJSON(): Saved {
     const p = this.project!;
-    return { sourceName: this.sourceName, sourceHash: this.sourceHash, levelsAsm: p.levelsAsm, tablesAsm: p.tablesAsm, levels: p.levels, level: this.level };
+    return { sourceName: this.sourceName, sourceHash: this.sourceHash, layout: this.layout, levelsAsm: p.levelsAsm, tablesAsm: p.tablesAsm, levels: p.levels, level: this.level };
   }
 
   /** Load a saved project (autosave or a JSON file). */
   fromJSON(s: Saved): void {
     const p = loadProject(s.levelsAsm, s.tablesAsm);
     p.levels = s.levels;
+    this.layout = s.layout ?? null;
     this.load(p, s.sourceName, s.sourceHash ?? null);
     this.level = s.level ?? 0;
     this.changed(false);

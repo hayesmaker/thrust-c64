@@ -1,6 +1,6 @@
 import './style.css';
 import { attachInput } from './editor/input';
-import { loadModSource, mountPanel, openAsmFiles, toast } from './editor/panel';
+import { loadModSource, mountPanel, openAsmFiles, refreshFromServer, toast } from './editor/panel';
 import { PlayerOverlay } from './editor/player';
 import { Store } from './editor/store';
 import { View } from './editor/view';
@@ -44,6 +44,8 @@ window.addEventListener('beforeunload', () => store.saveNow());
 async function start() {
   if (store.restoreAutosave()) {
     toast('Restored autosaved project');
+    // the memory layout comes from the mod source on disk; offline, keep the autosaved one
+    await refreshFromServer(store).catch(() => {});
   } else {
     try {
       await loadModSource(store);

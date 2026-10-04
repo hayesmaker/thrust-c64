@@ -81,16 +81,76 @@ export function validateLevel(l: Level): Issue[] {
 }
 
 // ---- memory -------------------------------------------------------------------
+//
+// Rough budgets (the build has the exact check: .errorif in thrust.asm).
+// Original game: terrain 434 + objects 356 bytes (levels.asm) and 102 bytes of
+// restart tables (level_tables.asm), all in the main block, which had 348
+// bytes free at $BEA4-$BFFF. thrusty-levels moves levels.asm to its own area
+// ($1000-$1FFF), which also frees its 790 bytes in the main block.
 
-/** Level data in the main block in the original game: terrain 434 +
- *  objects 356 + restart tables 102 bytes; 348 bytes are free at $BEA4-$BFFF. */
-export const ORIGINAL_LEVEL_BYTES = 892;
+export const ORIGINAL_LEVELS_ASM_BYTES = 790;
+export const ORIGINAL_RESTART_BYTES = 102;
+export const ORIGINAL_LEVEL_BYTES = ORIGINAL_LEVELS_ASM_BYTES + ORIGINAL_RESTART_BYTES;
 export const FREE_MAIN_BYTES = 348;
 export const LEVEL_BUDGET = ORIGINAL_LEVEL_BYTES + FREE_MAIN_BYTES;
+/** "tight" below this many free bytes or 10% of the area, whichever is more */
+export const TIGHT_BYTES = 64;
+
+export interface Layout {
+  levelsArea: { start: number; end: number } | null;
+}
+
+export type MemState = 'ok' | 'tight' | 'over';
+
+export interface MemArea {
+  id: 'levels' | 'main';
+  label: string;
+  used: number;
+  budget: number;
+  free: number;
+  state: MemState;
+}
 
 export function levelBytes(l: Level): { terrain: number; objects: number; restarts: number; total: number } {
   const terrain = 2 * (wallTables(l.left).counts.length + wallTables(l.right).counts.length);
   const objects = 5 * l.objects.length + 1;
   const restarts = 6 * l.restarts.length;
   return { terrain, objects, restarts, total: terrain + objects + restarts };
+}
+
+const area = (id: MemArea['id'], label: string, used: number, budget: number): MemArea => {
+  const free = budget - used;
+  const state: MemState = free < 0 ? 'over' : free < Math.max(TIGHT_BYTES, budget * 0.1) ? 'tight' : 'ok';
+  return { id, label, used, budget, free, state };
+};
+
+/** Where the level data goes and roughly how full each place is. */
+export function memoryAreas(levels: Level[], layout: Layout | null): MemArea[] {
+  const sum = (f: (b: ReturnType<typeof levelBytes>) => number) => levels.reduce((n, l) => n + f(levelBytes(l)), 0);
+  const la = layout?.levelsArea;
+  if (!la) return [area('main', 'level data (main block, ends below $C000)', sum((b) => b.total), LEVEL_BUDGET)];
+  const hex = (v: number) => '$' + v.toString(16).toUpperCase();
+  return [
+    area('levels', `terrain + objects (levels area ${hex(la.start)}-${hex(la.end - 1)})`, sum((b) => b.terrain + b.objects), la.end - la.start),
+    // the main block keeps its free bytes plus the 790 that levels.asm used to take
+    area('main', 'restart points (main block, ends below $C000)', sum((b) => b.restarts),
+      ORIGINAL_RESTART_BYTES + FREE_MAIN_BYTES + ORIGINAL_LEVELS_ASM_BYTES),
+  ];
+}
+
+export const worstState = (areas: MemArea[]): MemState =>
+  areas.some((a) => a.state === 'over') ? 'over' : areas.some((a) => a.state === 'tight') ? 'tight' : 'ok';
+
+/** Checks entries for the memory areas (project-wide). */
+export function memoryIssues(areas: MemArea[], level: number): Issue[] {
+  return areas
+    .filter((a) => a.state !== 'ok')
+    .map((a) => ({
+      level,
+      severity: a.state === 'over' ? ('error' as const) : ('warn' as const),
+      message:
+        a.state === 'over'
+          ? `out of memory: ${a.label} is ${-a.free} bytes over (${a.used} of ~${a.budget}); the build will fail`
+          : `memory is tight: ${a.free} bytes left for ${a.label}`,
+    }));
 }

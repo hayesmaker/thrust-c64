@@ -7,7 +7,7 @@ import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createApi, parseKickAssErrors, patchStartLevel, sourceHash } from '../server/api.ts';
+import { createApi, parseKickAssErrors, patchStartLevel, readLayout, sourceHash } from '../server/api.ts';
 
 const ROOT = join(import.meta.dirname, '../../..');
 const KICKASS = process.env.KICKASS ?? '/opt/KickAss.jar';
@@ -24,6 +24,24 @@ describe('parseKickAssErrors', () => {
   it('reads message, line, column and file', () => {
     const log = 'parsing\n\n    .byte $zz\n          ^\n\nError: Syntax error\nat line 22, column 19 in levels.asm\n\n';
     expect(parseKickAssErrors(log)).toEqual([{ message: 'Syntax error', line: 22, column: 19, file: 'levels.asm' }]);
+  });
+});
+
+describe('failed .assert', () => {
+  it('counts as an error (KickAssembler still writes the PRG)', () => {
+    const log = '  music must end below $3000=true (true)\n  main code must end below $C000=false (true) -- ERROR IN ASSERTION!!!\n';
+    expect(parseKickAssErrors(log)).toEqual([
+      { message: 'assertion failed: main code must end below $C000', line: 0, column: 0, file: 'thrust.asm' },
+    ]);
+  });
+});
+
+describe('readLayout', () => {
+  it('finds the levels area in the mod and none in the original', () => {
+    expect(readLayout(readFileSync(join(ROOT, 'packages/thrusty-levels/src/thrust.asm'), 'utf8'))).toEqual({
+      levelsArea: { start: 0x1000, end: 0x2000 },
+    });
+    expect(readLayout(readFileSync(join(ROOT, 'src/thrust.asm'), 'utf8'))).toEqual({ levelsArea: null });
   });
 });
 
@@ -70,6 +88,7 @@ describe('HTTP API', () => {
     const s = await get('/api/source');
     expect(s.levelsAsm).toBe(readFileSync(join(modDir, 'levels.asm'), 'utf8'));
     expect(s.hash).toBe(sourceHash(s.levelsAsm, s.tablesAsm));
+    expect(s.layout).toEqual({ levelsArea: { start: 0x1000, end: 0x2000 } });
   });
 
   it('PUT /api/source refuses a stale hash and backs up before writing', async () => {
@@ -101,6 +120,15 @@ describe('HTTP API', () => {
     const prg = new Uint8Array(await (await fetch(`${base}/api/builds/${b.id}/thrust.prg`)).arrayBuffer());
     expect(play.length).toBe(b.prgBytes);
     expect([...play].filter((v, i) => v !== prg[i])).toEqual([3]);
+  }, 60_000);
+
+  it.skipIf(!canBuild)('POST /api/build fails when levels.asm overflows its area', async () => {
+    const s = await get('/api/source');
+    // 4000 extra bytes: more than the 4 KB area can hold
+    const big = s.levelsAsm.replace('level_0_obj_pos_X:\n', `level_0_obj_pos_X:\n    .fill 4000, 0\n`);
+    const { body: b } = await send('POST', '/api/build', { levelsAsm: big, tablesAsm: s.tablesAsm });
+    expect(b.ok).toBe(false);
+    expect(b.errors[0].message).toMatch(/^levels\.asm is \d+ bytes too big for the levels area \$1000-\$1fff/i);
   }, 60_000);
 
   it.skipIf(!canBuild)('POST /api/build reports KickAssembler errors', async () => {

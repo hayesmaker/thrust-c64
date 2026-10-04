@@ -26,6 +26,15 @@ the two files as downloads and the terrain `.byte` lines for copy and paste.
 
 `THRUST_MOD_SRC` and `THRUST_BACKUP_DIR` point the server at other folders.
 
+**Memory:** the Level section shows a rough meter per place the level data
+lives. For thrusty-levels (which defines `LEVELS_AREA_START/END` in
+`thrust.asm`): terrain + objects in `$1000-$1FFF` (4096 bytes) and restart
+points in the main block; for the original layout one main-block meter
+(~1240 bytes). Below 10% (or 64 bytes) free it turns amber with a "memory is
+tight" banner by Build & play; over budget it turns red, the Checks list an
+error, and the build fails with KickAssembler's message (the build server
+also treats a failed `.assert` as an error).
+
 ## Build API (`server/`)
 
 `api.ts` is a dependency-free Node handler (the Vite dev server and

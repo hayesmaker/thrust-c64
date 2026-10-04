@@ -16,8 +16,8 @@ import {
 } from '../model/level';
 import { ANGLE_NAMES, GUN_SPREAD, gunArc, gunBase, gunParam, gunSpread, isGun, snapObject } from '../model/objects';
 import { encodeWall, pointsToRuns, segmentSteps } from '../model/terrain';
-import { LEVEL_BUDGET, ORIGINAL_LEVEL_BYTES, levelBytes, validateLevel } from '../model/validate';
-import { type BuildError, type BuildResult, ApiError, build, buildFileUrl, fetchBuildFile, getSource, putSource } from './api';
+import { type MemState, levelBytes, memoryAreas, memoryIssues, validateLevel, worstState } from '../model/validate';
+import { type BuildError, type BuildResult, type Source, ApiError, build, buildFileUrl, fetchBuildFile, getSource, putSource } from './api';
 import { download, terrainAsm } from './export';
 import { deleteSelection } from './input';
 import { addObject, addRestart, centreWindow, movePoint, reorderObject, sortObjects } from './ops';
@@ -58,6 +58,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     </section>
     <section>
       <h2>Build and play</h2>
+      <div id="p-mem-banner" hidden></div>
       <label><input type="checkbox" id="p-start-here" checked> start the game on this level</label>
       <div class="row">
         <button id="p-play" class="primary" title="Ctrl+Enter">Build &amp; play</button>
@@ -638,10 +639,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   }
 
   function renderChecks(l: Level) {
-    const issues = validateLevel(l);
-    const total = store.project!.levels.reduce((n, lv) => n + levelBytes(lv).total, 0);
-    if (total > LEVEL_BUDGET)
-      issues.unshift({ level: l.index, severity: 'error', message: `level data is ${total} bytes: about ${LEVEL_BUDGET} fit in the main block` });
+    const issues = [...memoryIssues(memoryAreas(store.project!.levels, store.layout), l.index), ...validateLevel(l)];
     const bad = issues.filter((i) => i.severity !== 'info').length;
     $('p-check-count').innerHTML = bad ? `<span class="warn">(${bad})</span>` : '<span class="ok">✓</span>';
     $('p-checks').innerHTML =
@@ -654,16 +652,36 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         .join('') || '<li class="ok">No problems found.</li>';
   }
 
+  let lastMemState: MemState = 'ok';
   function renderMemory(l: Level) {
-    const levels = store.project!.levels;
-    const total = levels.reduce((n, lv) => n + levelBytes(lv).total, 0);
+    const areas = memoryAreas(store.project!.levels, store.layout);
     const b = levelBytes(l);
-    const pct = Math.min(100, (total / LEVEL_BUDGET) * 100);
-    $('p-memory').innerHTML = `
-      <div class="meter ${total > LEVEL_BUDGET ? 'over' : ''}"><div style="width:${pct}%"></div>
-        <span class="mark" style="left:${(ORIGINAL_LEVEL_BYTES / LEVEL_BUDGET) * 100}%" title="original game"></span></div>
-      <div class="muted small">all levels ${total} of ~${LEVEL_BUDGET} bytes (original ${ORIGINAL_LEVEL_BYTES}) ·
-        this level: terrain ${b.terrain}, objects ${b.objects}, restarts ${b.restarts}</div>`;
+    $('p-memory').innerHTML =
+      areas
+        .map((a) => {
+          const pct = Math.min(100, (a.used / a.budget) * 100);
+          const left = a.free >= 0 ? `${a.free} free` : `<b>${-a.free} over</b>`;
+          return `<div class="meter ${a.state}"><div style="width:${pct}%"></div></div>
+            <div class="small mem-${a.state}">${a.label}: ${a.used} of ~${a.budget} bytes · ${left}</div>`;
+        })
+        .join('') +
+      `<div class="muted small">this level: terrain ${b.terrain}, objects ${b.objects}, restart points ${b.restarts} bytes</div>`;
+
+    // banner next to Build & play, and a toast when it gets worse while editing
+    const state = worstState(areas);
+    const banner = $('p-mem-banner');
+    const worst = areas.filter((a) => a.state === state).sort((x, y) => x.free - y.free)[0];
+    banner.hidden = state === 'ok';
+    banner.className = `mem-banner ${state}`;
+    if (state === 'ok') banner.textContent = '';
+    else if (worst)
+      banner.textContent =
+        state === 'over'
+          ? `Out of memory: ${worst.label} is ${-worst.free} bytes over. The build will fail until you remove something.`
+          : `Memory is tight: ${worst.free} bytes left for ${worst.label}.`;
+    const rank = { ok: 0, tight: 1, over: 2 };
+    if (rank[state] > rank[lastMemState]) toast(banner.textContent ?? '');
+    lastMemState = state;
   }
 
   // ---- tables
@@ -745,7 +763,29 @@ export function toast(msg: string): void {
 
 export async function loadModSource(store: Store): Promise<void> {
   const s = await getSource();
+  applyLayout(store, s);
   store.load(loadProject(s.levelsAsm, s.tablesAsm), s.name, s.hash);
+}
+
+/** The layout belongs to the mod source on disk (thrust.asm), not to the
+ *  project, so it always comes from the server. A server from before the
+ *  layout existed sends none: keep what we have and say so. */
+function applyLayout(store: Store, s: Source): void {
+  if (!('layout' in s)) {
+    toast('Restart the editor server (npm run dev) to pick up its changes');
+    return;
+  }
+  store.layout = s.layout ?? null;
+}
+
+/** After restoring an autosave: take the layout from the server and warn if
+ *  the mod source changed on disk since the project was loaded. */
+export async function refreshFromServer(store: Store): Promise<void> {
+  const s = await getSource();
+  applyLayout(store, s);
+  if (store.sourceHash && s.hash !== store.sourceHash)
+    toast('The mod source changed on disk since this project was loaded: "Save to mod source" will refuse. "Load mod source" starts from the disk version.');
+  store.changed(false);
 }
 
 /** What differs from the loaded source, one line per level. */

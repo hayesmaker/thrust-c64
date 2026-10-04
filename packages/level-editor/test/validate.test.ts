@@ -38,3 +38,38 @@ describe('levelBytes', () => {
     expect(total).toBe(ORIGINAL_LEVEL_BYTES);
   });
 });
+
+import { memoryAreas, memoryIssues, worstState } from '../src/model/validate';
+
+describe('memoryAreas', () => {
+  const area = { levelsArea: { start: 0x1000, end: 0x2000 } };
+
+  it('original layout: one main-block area with the original 348 bytes free', () => {
+    const [a] = memoryAreas(load().levels, null);
+    expect(a).toMatchObject({ id: 'main', used: 892, budget: 1240, free: 348, state: 'ok' });
+  });
+
+  it('levels area layout: terrain + objects in $1000-$1FFF, restarts in the main block', () => {
+    const [lv, main] = memoryAreas(load().levels, area);
+    expect(lv).toMatchObject({ id: 'levels', used: 790, budget: 4096, state: 'ok' });
+    expect(main).toMatchObject({ id: 'main', used: 102, budget: 1240, state: 'ok' });
+  });
+
+  it('gets tight, then over, as objects are added', () => {
+    const levels = load().levels;
+    const add = (n: number) => {
+      for (let k = 0; k < n; k++) levels[0].objects.push({ type: 4, x: 0, y: 0x200, gun: 0 });
+    };
+    add(50); // +250 bytes: 1142 of 1240, 98 free (< 10% = 124)
+    let areas = memoryAreas(levels, null);
+    expect(areas[0].state).toBe('tight');
+    expect(memoryIssues(areas, 0)[0]).toMatchObject({ severity: 'warn' });
+    add(30); // 248 more bytes in total than the budget allows
+    areas = memoryAreas(levels, null);
+    expect(areas[0].state).toBe('over');
+    expect(worstState(areas)).toBe('over');
+    expect(memoryIssues(areas, 0)[0].message).toMatch(/^out of memory: .* 52 bytes over/);
+    // the same data fits easily in the levels area
+    expect(worstState(memoryAreas(levels, area))).toBe('ok');
+  });
+});

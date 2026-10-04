@@ -154,6 +154,22 @@ increasing rows. The tables are generated, never edited by hand:
 - [ ] Optional: watch mode (rebuild on edit, debounced).
 - [ ] Optional: cheats for testing (infinite fuel/lives) via more PRG patches.
 
+### Memory (after phase 5) - done
+- [x] thrusty-levels: `levels.asm` moved to `$1000-$1FFF` (4 KB; was ~1.1 KB in the
+      main block), layout checks as `.errorif` (a failed `.assert` still writes
+      the PRG). Verified in the emulator: RAM at `$1000` matches the PRG after
+      start-up and all six levels play.
+- [x] Server: failed `.assert`s count as build errors; `/api/source` reports the
+      levels area (`LEVELS_AREA_START/END` in thrust.asm).
+- [x] Editor: rough meter per area (levels area / main block), amber "tight"
+      (< 10% or 64 bytes free) and red "over" states, banner by Build & play,
+      Checks entries, toast when it gets worse.
+- [x] Python tools map `$0801-$2FFF` in place, so they read the new layout.
+- [x] The layout always comes from the server, also after restoring an autosave
+      (autosaves made before the change had none); a toast says when the mod
+      source changed on disk since the project was loaded, or when the server
+      is too old to report the layout.
+
 ## After the MVP
 - [ ] New levels (7+): pointer/lookup table entries, `cmp #$06`, placement in
       `$1000-$1FFF`, colours/gravity — see "Adding levels" in level_format.md.

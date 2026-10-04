@@ -1,6 +1,6 @@
 // Client for the build API (server/api.ts).
 
-import type { BuildResult } from '../../server/api.ts';
+import type { BuildResult, Layout } from '../../server/api.ts';
 
 export type { BuildError, BuildResult } from '../../server/api.ts';
 
@@ -37,6 +37,7 @@ export interface Source {
   levelsAsm: string;
   tablesAsm: string;
   hash: string;
+  layout: Layout;
 }
 
 export const getSource = () => call<Source>('GET', '/api/source');

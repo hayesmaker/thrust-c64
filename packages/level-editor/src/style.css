@@ -125,3 +125,14 @@ input[type=text] { width: 100%; background: var(--bg); color: var(--text); borde
   border-radius: 4px; padding: 4px 6px; font: 12px ui-monospace, monospace; margin-top: 3px; }
 #p-build-status { margin-top: 6px; }
 #p-build-status pre { max-height: 200px; overflow: auto; }
+
+/* memory warnings */
+.meter.ok > div { background: var(--accent); }
+.meter.tight > div { background: var(--edited); }
+.meter.over > div { background: var(--warn); }
+.mem-tight { color: var(--edited); }
+.mem-over { color: var(--warn); }
+.mem-ok { color: var(--muted); }
+.mem-banner { margin: 0 0 8px; padding: 7px 9px; border-radius: 5px; font-size: 12.5px; font-weight: 600; }
+.mem-banner.tight { background: #3a3110; border: 1px solid var(--edited); color: var(--edited); }
+.mem-banner.over { background: #3d1714; border: 1px solid var(--warn); color: #ffb3aa; }
