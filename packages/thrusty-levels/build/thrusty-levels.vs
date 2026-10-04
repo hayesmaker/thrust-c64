@@ -75,7 +75,7 @@ al C:37 .diff_midpoint_xpos_FRAC_LO
 al C:b23b .Lb551
 al C:244f .music_voice_reg_offset
 al C:90da .L90da
-al C:693f .gfx_load
+al C:6966 .gfx_load
 al C:a90b .Lac21
 al C:b211 .enter_new_high_score_name
 al C:72 .particle_screen_y
@@ -388,6 +388,7 @@ al C:1288 .level_3_gun_param
 al C:9791 .test_sound_keys_return
 al C:92a1 .add_score_return
 al C:2082 .music_new_pattern_ok
+al C:bb8e .write_title_screen_texts
 al C:9039 .L9039
 al C:99ec .L99ec
 al C:ad51 .store_32_loop
@@ -693,7 +694,7 @@ al C:b119 .Lb42f
 al C:86 .teleport_ring_count
 al C:8b8f .sprite_list_shift
 al C:8673 .handle_generator
-al C:690e .relocator_load
+al C:6935 .relocator_load
 al C:972f .L972f
 al C:94dc .write_no_bonus
 al C:a9e3 .jump_fn_1_addr_HI
@@ -769,6 +770,7 @@ al C:122f .level_2_obj_pos_Y_EXT
 al C:9f0f .create_explosion_loop
 al C:a4d2 .set_status_bar_chars
 al C:8d .explosion_particle_type
+al C:bb9f .msg_title
 al C:84c2 .terrain_left_wall_increment_LO
 al C:9e09 .ship_input_rotate
 al C:98b1 .plot_ship_return
@@ -845,7 +847,7 @@ al C:866c .handle_door_switch
 al C:831d .landscape_draw_part_2
 al C:80 .clear_screen_ptr
 al C:84b4 .terrain_left_wall_1_xpos
-al C:692c .relocate
+al C:6953 .relocate
 al C:84b9 .terrain_left_wall_2_index
 al C:9f7 .terrain_draw_table_1
 al C:12cd .level_4_obj_type
@@ -974,7 +976,7 @@ al C:8afd .irq_sprite_x_msb_clear
 al C:2458 .music_note_length_left
 al C:a928 .plot_line_bresenham_1_addr_HI
 al C:9e77 .calculate_player_position_from_midpoint
-al C:690e .entry
+al C:6935 .entry
 al C:52 .pod_window_xpos_INT
 al C:8e06 .read_key_next_bit
 al C:8f4e .plot_char_A
@@ -1000,7 +1002,7 @@ al C:95dd .no_thrust
 al C:21fd .L21fd
 al C:2485 .music_instruments
 al C:ab53 .draw_fuel_beam
-al C:763f .filler2_load
+al C:7666 .filler2_load
 al C:79 .screen_addr_hi_temp
 al C:d415 .SID_FC_LO
 al C:8868 .object_sprite_coords
@@ -1194,7 +1196,7 @@ al C:780 .particles_pixels_byte
 al C:8ff0 .L8ff0
 al C:75 .new_ship_ypos_INT_HI
 al C:d406 .SID_V1_SR
-al C:bb8e .main_end
+al C:bbb5 .main_end
 al C:9ab0 .pod_spr_y
 al C:9ab1 .pod_spr_x
 al C:b0cb .Lb3e1
@@ -1458,7 +1460,7 @@ al C:a950 .line_step_right
 al C:2a50 .music_pattern_01
 al C:8a0e .irq_no_planet_flash
 al C:9b4b .sfx_unused
-al C:692e .relocate_loop
+al C:6955 .relocate_loop
 al C:2a8c .music_pattern_04
 al C:90b4 .L90b4
 al C:2a6e .music_pattern_03

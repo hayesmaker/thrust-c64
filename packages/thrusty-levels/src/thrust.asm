@@ -6093,7 +6093,7 @@ high_score_start:
     jsr set_text_screen_colours                 // $afea  
     jsr plot_high_score_table                   // $afed  
     jsr write_top_8_thrusters                   // $aff0  
-    jsr write_press_spacebar                    // $aff3  
+    jsr write_title_screen_texts                // $aff3  thrusty-levels: was write_press_spacebar
     ldx #$00                                    // $aff6  
     stx demo_keypress_bit_mask                  // $aff8  
     stx demo_keypress_timer                     // $affb  
@@ -7301,7 +7301,7 @@ msg_enter_name:
     .byte $48,$74,$50,$6c,$65,$61,$73,$65,$20,$65,$6e,$74,$65,$72,$20,$79  // $0934  "HtPlease enter y"
     .byte $6f,$75,$72,$20,$6e,$61,$6d,$65,$ff   // $0944  "our name."
 msg_press_space:
-    .byte $38,$74,$50,$72,$65,$73,$73,$20,$53,$50,$41,$43,$45,$20,$42,$41  // $094d  "8tPress SPACE BA"
+    .byte $b8,$76,$50,$72,$65,$73,$73,$20,$53,$50,$41,$43,$45,$20,$42,$41  // $094d  "..Press SPACE BA" (thrusty-levels: at $76b8 = row 18, was $7438 = row 16)
     .byte $52,$20,$74,$6f,$20,$73,$74,$61,$72,$74,$ff  // $095d  "R to start."
 msg_out_of_fuel:
     .byte $b0,$6b,$4f,$75,$74,$20,$6f,$66,$20,$66,$75,$65,$6c,$ff  // $0968  ".kOut of fuel."
@@ -7438,6 +7438,27 @@ status_charset_data:
     .byte $00,$00,$00,$00,$00,$00,$00,$00       // $be8c  
     .byte $00,$00,$00,$00,$00,$00,$00,$00       // $be94  
     .byte $00,$00,$00,$00,$00,$00,$00,$00       // $be9c  
+
+// ----------------------------------------------------------------------------
+// thrusty-levels: title screen text (high score table, music playing).
+// "Press SPACE BAR to start." moved down 2 rows (row 16 -> 18, its first two
+// bytes in tab_0900) to make room for the title on row 16.
+// Messages: <bitmap address>, ASCII text, $FF. Bitmap $6000, 40x25 cells.
+// ----------------------------------------------------------------------------
+write_title_screen_texts:
+    jsr write_press_spacebar
+    lda #$07                                    // yellow, like "Game Over"
+    sta font_byte_mask
+    lda #>msg_title
+    sta plot_string_ptr+1
+    ldx #<msg_title
+    jmp write_message
+.function text_pos(row, col) { .return $6000 + row * 320 + col * 8 }
+msg_title:
+    .byte <text_pos(16, 10), >text_pos(16, 10)
+    .encoding "ascii"
+    .text "SUPER THRUSTY MAKER"
+    .byte $ff
 }
 
 // ============================================================================

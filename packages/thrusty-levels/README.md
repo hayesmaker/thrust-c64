@@ -30,13 +30,23 @@ data is reached through the pointer tables, so nothing else changed.
 | Data | Where | Room |
 |------|-------|------|
 | `levels.asm` (terrain, objects) | `$1000-$1FFF` (`LEVELS_AREA_START/END`) | 4096 bytes (842 used) |
-| `level_tables.asm` (restart points, pointers, colours, gravity) | main block, must end below `$C000` | 1138 bytes free |
+| `level_tables.asm` (restart points, pointers, colours, gravity) | main block, must end below `$C000` | 1099 bytes free |
 
 Both limits are `.errorif` checks in `thrust.asm`, so an overflow stops the
 build with a message such as `levels.asm is 46 bytes too big for the levels
 area $1000-$1fff`. (KickAssembler's `.assert` only prints a warning and still
 writes the PRG.) The level editor shows both areas and warns when either gets
 tight.
+
+## Title screen
+
+The high score screen (shown while the title music plays) has a title line,
+"SUPER THRUSTY MAKER", on text row 16 under the table, in the game's own font;
+"Press SPACE BAR to start." moved down from row 16 to row 18. The title
+screen code calls `write_title_screen_texts` (end of the main block, 39 bytes)
+instead of `write_press_spacebar`; change the text in `msg_title` in
+`thrust.asm`. Message positions are bitmap addresses: `text_pos(row, col)` =
+`$6000 + row * 320 + col * 8`.
 
 ## examples/
 
