@@ -15,5 +15,9 @@ else
     echo "NOTE: build/thrust.prg differs from the original (expected if you changed the source)"
 fi
 if [ "$1" = "run" ]; then
-    x64sc -moncommands build/thrust.vs -autostart build/thrust.prg >/dev/null 2>&1 &
+    # -autostartprgmode 1 injects the PRG straight into RAM, so it works without
+    # a disk drive; +saveres keeps this session from changing your vicerc
+    x64sc +saveres -autostartprgmode 1 -moncommands build/thrust.vs -autostart build/thrust.prg \
+        > build/vice.log 2>&1 &
+    echo "Started x64sc (log: build/vice.log)"
 fi

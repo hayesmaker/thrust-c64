@@ -69,7 +69,8 @@ basic_end:
 
 # (name, load_start, load_end_exclusive, runtime_start, note)
 PIECES = [
-    ('basic_stub', 0x0801, 0x0817, 0x0801, 'BASIC line: 10 SYS(27684) KASPER  (added by the cracker)'),
+    ('basic_stub', 0x0801, 0x0817, 0x0801, 'BASIC line: 1987 SYS(27684) KASPER\n'
+     '"KASPER" is probably a cracker\'s tag - there is no crack intro in this version'),
     ('filler1', 0x0817, 0x2000, 0x0817, 'Unused filler ($FA) left by the cruncher'),
     ('music', 0x2000, 0x3000, 0x2000, 'Music / sound effects driver and data. Runs in place.'),
     ('music_stub', 0x3000, 0x3003, 0x3000, 'JMP to the music driver, called each frame via JSR $3000.\n'

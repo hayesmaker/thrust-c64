@@ -458,7 +458,8 @@
 
 // ============================================================================
 // basic_stub  (load $0801-$0816, runtime $0801-$0816)
-// BASIC line: 10 SYS(27684) KASPER  (added by the cracker)
+// BASIC line: 1987 SYS(27684) KASPER
+// "KASPER" is probably a cracker's tag - there is no crack intro in this version
 // ============================================================================
 basic_stub_load:
     .word basic_end                             // link to next BASIC line

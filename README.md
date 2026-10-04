@@ -24,7 +24,7 @@ This folder holds a complete, re-assemblable disassembly of the C64 version.
 | `src/sprites.asm` | Sprite graphics (shown as `#`/`.` pictures in the comments) |
 | `orig/thrust.prg` | Original packed file from the disk image |
 | `orig/thrust_unpacked.prg` | The same program after decrunching — the build target |
-| `orig/thrustpic.prg` | Cracker intro picture ("KASPER"), not part of the game |
+| `orig/thrustpic.prg` | Original Thrust loading screen (separate file, not disassembled) |
 | `docs/level_format.md` | Level data format and how to change / add levels |
 | `docs/memory_map.md` | Run-time memory map, free RAM |
 | `docs/levels/` | Maps of all 6 levels rendered from the data (`tools/levelview.py`) |
@@ -37,14 +37,14 @@ The disk file is crunched twice. Once unpacked it is a single PRG at
 moved elsewhere, so the source assembles each section at its *load* address
 but labels it with its *run-time* address using `.pseudopc`:
 
-| Load | Run time | What |
-|------|----------|------|
-| `$0801` | `$0801` | BASIC line `SYS(27684) KASPER` (cracker's) |
-| `$2000-$2FFF` | same | music driver + data |
-| `$3000-$3002` | same | `JMP music_driver`, called every frame |
-| `$3003-$6C23` | `$8283-$BEA3` | main game code and data |
-| `$6C24-$6C54` | same | entry point / relocator |
-| `$6C55-$7954` | `$4000-$4CFF` | sprite graphics |
+| Load | Run time | What                                                                                         |
+|------|----------|----------------------------------------------------------------------------------------------|
+| `$0801` | `$0801` | BASIC line `1987 SYS(27684) KASPER` ("KASPER" is the cracker's tag; there is no crack intro) |
+| `$2000-$2FFF` | same | music driver + data                                                                          |
+| `$3000-$3002` | same | `JMP music_driver`, called every frame                                                       |
+| `$3003-$6C23` | `$8283-$BEA3` | main game code and data                                                                      |
+| `$6C24-$6C54` | same | entry point / relocator                                                                      |
+| `$6C55-$7954` | `$4000-$4CFF` | sprite graphics                                                                              |
 
 Inside the main block, `init` copies a few more pieces to low memory:
 init code to `$0400`, the high score table to `$0100`, the angle tables to
