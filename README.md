@@ -32,6 +32,41 @@ This folder holds a complete, re-assemblable disassembly of the C64 version.
 | `packages/thrusty-levels/` | Modded levels: hand-edited copy of the source, not touched by `regen.sh` (see `packages/thrusty-levels/README.md`) |
 | `packages/level-editor/` | Web level editor: [user guide](packages/level-editor/docs/user-guide.md), plan in `docs/level_editor_plan.md` |
 
+## Packages
+
+Two projects are built on top of the disassembly. Each has its own README.
+
+### [`packages/thrusty-levels/`](packages/thrusty-levels/README.md): the mod
+
+This is a hand-edited copy of the source. `tools/regen.sh` never touches it.
+It changes the original game in these ways:
+
+* The level data moves to `$1000-$1FFF`, which leaves room for bigger and more
+  levels.
+* The title screen shows "SUPER THRUSTY MAKER", and a QR code links to this
+  repo.
+* It starts from template levels.
+
+`./packages/thrusty-levels/build.sh` builds `packages/thrusty-levels/build/thrusty-levels.prg`.
+Add `run` to start it in VICE.
+
+### [`packages/level-editor/`](packages/level-editor/README.md): the level editor
+
+This is a browser editor for Thrust levels, written in TypeScript with a
+canvas front end.
+
+* **Editing:** you draw the cave walls, place guns, fuel, the pod, the
+  generator and switches, and set gravity, colours and restart points.
+* **Playing:** Build & play assembles the mod with your levels through a small
+  Node API that runs KickAssembler. The game then runs in an emulator inside
+  the page.
+* **Saving:** each game is saved as a JSON file. The mod's levels are only the
+  starting template and are never overwritten.
+
+To run it: `cd packages/level-editor && npm install && npm run dev`. KickAssembler
+and Java are required for builds. The [user guide](packages/level-editor/docs/user-guide.md)
+is also built into the app: click **Guide** or press `?`.
+
 ## How the program is laid out
 
 The disk file is crunched twice. Once unpacked it is a single PRG at
