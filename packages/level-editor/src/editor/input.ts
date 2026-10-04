@@ -34,7 +34,8 @@ export function deleteSelection(store: Store): void {
         : deleteRestart(l, sel.index);
   if (!ok) return store.cancelCheckpointIfUnchanged();
   store.selection = null;
-  store.changed();
+  if (sel.kind === 'point') store.terrainChanged();
+  else store.changed();
 }
 
 /** Move the selection by (dx, drow); objects keep the snap setting. */
@@ -55,8 +56,9 @@ export function nudgeSelection(store: Store, dx: number, dr: number, snap: boole
     const r = l.restarts[sel.index];
     ok = moveRestart(l, sel.index, r.shipX + dx, r.shipY + dr);
   }
-  if (ok) store.changed();
-  else store.cancelCheckpointIfUnchanged();
+  if (!ok) store.cancelCheckpointIfUnchanged();
+  else if (sel.kind === 'point') store.terrainChanged();
+  else store.changed();
 }
 
 export function attachInput(view: View, store: Store): void {
@@ -120,7 +122,7 @@ export function attachInput(view: View, store: Store): void {
       if (insertPoint(l[seg.side], seg.index, seg.row, seg.x)) {
         store.selection = { kind: 'point', side: seg.side, index: seg.index };
         drag = { kind: 'point', side: seg.side, index: seg.index, tile: seg.tile };
-        store.changed();
+        store.terrainChanged();
         return;
       }
       store.cancelCheckpointIfUnchanged();
@@ -145,7 +147,8 @@ export function attachInput(view: View, store: Store): void {
         const snap = store.snapObjects !== e.altKey;
         ok = moveObject(l, drag.index, w.x - drag.tile - drag.grabX, w.row - drag.grabY, snap, store.decoded);
       } else ok = moveRestart(l, drag.index, w.x - drag.tile, w.row);
-      if (ok) store.changed();
+      if (ok && drag.kind === 'point') store.terrainChanged();
+      else if (ok) store.changed();
     } else {
       const hit = hitAny(p.x, p.y);
       const next = hit?.sel ?? null;

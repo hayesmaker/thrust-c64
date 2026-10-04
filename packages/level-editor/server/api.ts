@@ -1,12 +1,11 @@
 // Build API for the level editor (plain Node, no dependencies). Used as
 // middleware by the Vite dev server (vite.config.ts) and by server/index.ts.
 //
-//   GET  /api/source              the mod's levels.asm + level_tables.asm (+ hash)
-//   PUT  /api/source              write them back (409 if they changed on disk)
-//   POST /api/build               build a temp copy with KickAssembler
+//   GET  /api/source              the template: the mod's levels.asm + level_tables.asm (+ hash)
+//   POST /api/build               build a temp copy of the mod with the posted level files
 //   GET  /api/builds/<id>/<file>  thrust.prg, play.prg, thrust.sym, thrust.vs, kickass.log
 //
-// The mod source is only written by PUT /api/source, after a backup.
+// The mod source is read-only: games are saved as JSON files by the browser.
 
 import { execFile } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
@@ -18,13 +17,10 @@ import { join } from 'node:path';
 export interface ApiOptions {
   /** packages/thrusty-levels/src */
   modDir: string;
-  /** where PUT /api/source keeps copies of the files it replaces */
-  backupDir: string;
   kickass?: string;
   java?: string;
   buildsDir?: string;
   keepBuilds?: number;
-  keepBackups?: number;
 }
 
 export interface BuildError {
@@ -116,7 +112,6 @@ export function createApi(o: ApiOptions) {
   const java = o.java ?? 'java';
   const buildsDir = o.buildsDir ?? join(tmpdir(), 'thrust-level-editor', 'builds');
   const keepBuilds = o.keepBuilds ?? 12;
-  const keepBackups = o.keepBackups ?? 30;
   let queue: Promise<unknown> = Promise.resolve();
 
   const readSource = () => {
@@ -184,22 +179,6 @@ export function createApi(o: ApiOptions) {
       if (url.pathname === '/api/source' && req.method === 'GET') {
         const layout = readLayout(readFileSync(join(o.modDir, 'thrust.asm'), 'utf8'));
         return json(res, 200, { name: 'packages/thrusty-levels/src', ...readSource(), layout });
-      }
-      if (url.pathname === '/api/source' && req.method === 'PUT') {
-        const body = await readJson(req);
-        if (typeof body.levelsAsm !== 'string' || typeof body.tablesAsm !== 'string')
-          return json(res, 400, { error: 'levelsAsm and tablesAsm are required' });
-        const cur = readSource();
-        if (body.baseHash !== cur.hash)
-          return json(res, 409, { error: 'the files changed on disk since they were loaded', hash: cur.hash });
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const bdir = join(o.backupDir, stamp);
-        mkdirSync(bdir, { recursive: true });
-        for (const f of Object.values(SOURCE_FILES)) copyFileSync(join(o.modDir, f), join(bdir, f));
-        writeFileSync(join(o.modDir, SOURCE_FILES.levelsAsm), body.levelsAsm);
-        writeFileSync(join(o.modDir, SOURCE_FILES.tablesAsm), body.tablesAsm);
-        prune(o.backupDir, keepBackups);
-        return json(res, 200, { hash: sourceHash(body.levelsAsm, body.tablesAsm), backup: bdir });
       }
       if (url.pathname === '/api/build' && req.method === 'POST') {
         const body = await readJson(req);

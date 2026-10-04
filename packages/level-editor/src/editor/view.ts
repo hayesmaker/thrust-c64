@@ -4,10 +4,11 @@
 // unit is 4 C64 pixels and one row is 2, so an X unit is drawn 2x as wide as
 // a row is tall. `scale` = screen pixels per row.
 
-import { PALETTE, PALETTE_RGB, hex2, hex3 } from '../c64';
-import { type Level, OBJ_SIZE, ObjType, type Wall } from '../model/level';
+import { PALETTE_RGB, hex2, hex3 } from '../c64';
+import type { Level, Wall } from '../model/level';
 import { GUN_MUZZLE, gunArc, isGun } from '../model/objects';
 import { DOORS } from '../model/validate';
+import { OBJ_BOUNDS, SPRITE_ROWS, SPRITE_UNITS, objectParts, spriteImage } from './look';
 import { wallXAt } from './ops';
 import { type Selection, type Side, type Store, sameSelection } from './store';
 
@@ -40,6 +41,8 @@ export class View {
   showScreen = true;
   /** Gun firing arcs for all guns (the selected gun always shows its arc). */
   showArcs = false;
+  /** Objects in the level's own colours instead of one colour per type. */
+  gameColours = false;
   cursor: { x: number; row: number } | null = null;
 
   private ctx: CanvasRenderingContext2D;
@@ -232,13 +235,6 @@ export class View {
     c.setLineDash([]);
   }
 
-  /** Colour of an object type with this level's colours. */
-  private objColour(l: Level, type: number): string {
-    if (type === ObjType.Fuel) return PALETTE[7];
-    if (type === ObjType.SwitchLeft || type === ObjType.SwitchRight) return PALETTE[4];
-    return PALETTE[l.colours.objects || 1];
-  }
-
   private drawDoor(l: Level): void {
     const door = DOORS[l.index];
     if (!door) return;
@@ -261,24 +257,31 @@ export class View {
     c.textBaseline = 'top';
     for (const t of this.tiles()) {
       l.objects.forEach((o, i) => {
-        const [w, h] = OBJ_SIZE[o.type] ?? [4, 8];
         const x = this.sx(o.x + t);
         const y = this.sy(o.y);
         const me: Selection = { kind: 'object', index: i };
         const isSel = sameSelection(sel, me);
         if (isGun(o.type) && (this.showArcs || isSel)) this.drawArc(o.x + t, o.y, o.type, o.gun, isSel);
-        c.fillStyle = this.objColour(l, o.type);
-        c.globalAlpha = 0.9;
-        c.fillRect(x, y, w * this.ux, h * this.scale);
-        c.globalAlpha = 1;
+        // the game's sprites, top-left at the object's position
+        const parts = objectParts(o.type, l.colours, this.gameColours);
+        for (const p of parts)
+          c.drawImage(spriteImage(p.frame, p.colour), x, y, SPRITE_UNITS * this.ux, SPRITE_ROWS * this.scale);
+        const b = OBJ_BOUNDS[o.type];
+        if (!parts.length || !b) {
+          c.fillStyle = '#aaa'; // unknown type
+          c.fillRect(x, y, 4 * this.ux, 8 * this.scale);
+          return;
+        }
+        const bx = x + b.x0 * this.ux;
+        const by = y + b.y0 * this.scale;
         if (isSel || sameSelection(hov, me)) {
           c.strokeStyle = isSel ? '#fff' : 'rgba(255,255,255,0.6)';
           c.lineWidth = isSel ? 2 : 1;
-          c.strokeRect(x - 2, y - 2, w * this.ux + 4, h * this.scale + 4);
+          c.strokeRect(bx - 2, by - 2, (b.x1 - b.x0) * this.ux + 4, (b.y1 - b.y0) * this.scale + 4);
         }
         if (this.ux >= 3) {
           c.fillStyle = '#fff';
-          c.fillText(String(i), x + 1, y - 12);
+          c.fillText(String(i), bx + 1, by - 14);
         }
       });
     }
@@ -463,11 +466,12 @@ export class View {
     for (const t of this.tiles())
       for (let i = l.objects.length - 1; i >= 0; i--) {
         const o = l.objects[i];
-        const [ow, oh] = OBJ_SIZE[o.type] ?? [4, 8];
+        const b = OBJ_BOUNDS[o.type] ?? { x0: 0, y0: 0, x1: 4, y1: 8 };
         const pad = 3 / this.ux; // a few pixels of slack for tiny zooms
         const gx = w.x - (o.x + t);
         const gy = w.row - o.y;
-        if (gx >= -pad && gx <= ow + pad && gy >= -pad * 2 && gy <= oh + pad * 2) return { index: i, tile: t, grabX: gx, grabY: gy };
+        if (gx >= b.x0 - pad && gx <= b.x1 + pad && gy >= b.y0 - pad * 2 && gy <= b.y1 + pad * 2)
+          return { index: i, tile: t, grabX: gx, grabY: gy };
       }
     return null;
   }

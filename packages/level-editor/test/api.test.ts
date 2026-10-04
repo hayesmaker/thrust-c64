@@ -1,7 +1,7 @@
 // Build API: error parsing, start-level patch, and the HTTP routes against a
 // temp copy of the mod source (the real one is never touched).
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { type AddressInfo } from 'node:net';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -68,7 +68,7 @@ describe('HTTP API', () => {
     tmp = mkdtempSync(join(tmpdir(), 'thrust-api-'));
     modDir = join(tmp, 'mod');
     cpSync(join(ROOT, 'packages/thrusty-levels/src'), modDir, { recursive: true });
-    const api = createApi({ modDir, backupDir: join(tmp, 'backups'), buildsDir: join(tmp, 'builds'), kickass: KICKASS });
+    const api = createApi({ modDir, buildsDir: join(tmp, 'builds'), kickass: KICKASS });
     server = createServer((req, res) => api(req, res));
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -91,16 +91,11 @@ describe('HTTP API', () => {
     expect(s.layout).toEqual({ levelsArea: { start: 0x1000, end: 0x2000 } });
   });
 
-  it('PUT /api/source refuses a stale hash and backs up before writing', async () => {
+  it('never writes the mod source (it is the template)', async () => {
     const s = await get('/api/source');
-    const edited = s.levelsAsm + '// edited\n';
-    expect((await send('PUT', '/api/source', { levelsAsm: edited, tablesAsm: s.tablesAsm, baseHash: 'stale' })).status).toBe(409);
-    const ok = await send('PUT', '/api/source', { levelsAsm: edited, tablesAsm: s.tablesAsm, baseHash: s.hash });
-    expect(ok.status).toBe(200);
-    expect(readFileSync(join(modDir, 'levels.asm'), 'utf8')).toBe(edited);
-    expect(readFileSync(join(ok.body.backup, 'levels.asm'), 'utf8')).toBe(s.levelsAsm);
-    expect(ok.body.hash).toBe(sourceHash(edited, s.tablesAsm));
-    expect(readdirSync(join(tmp, 'backups'))).toHaveLength(1);
+    const r = await send('PUT', '/api/source', { levelsAsm: s.levelsAsm + '// edited\n', tablesAsm: s.tablesAsm });
+    expect(r.status).toBe(404);
+    expect(readFileSync(join(modDir, 'levels.asm'), 'utf8')).toBe(s.levelsAsm);
   });
 
   it('rejects unknown routes and files', async () => {

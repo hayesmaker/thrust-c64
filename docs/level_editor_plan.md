@@ -129,15 +129,15 @@ increasing rows. The tables are generated, never edited by hand:
 - [x] `packages/level-editor/server/api.ts`: dependency-free Node handler, used as
       middleware by the Vite dev server and by `server/index.ts` (standalone,
       serves `dist/` + the API on 127.0.0.1:5180, `npm run serve`).
-- [x] `GET /api/source` (+ hash), `PUT /api/source` (409 if the files changed on
-      disk since loading; backup to `packages/level-editor/.backups/` first).
+- [x] `GET /api/source` (+ hash). (`PUT /api/source` with backups was removed:
+      the mod is a read-only template, games are JSON files; see below.)
 - [x] `POST /api/build`: temp copy of `packages/thrusty-levels/src` + the two
       generated files, KickAss, `{ ok, errors[], log, files }`; builds are queued
       and the last 12 kept (in the system temp dir).
 - [x] `GET /api/builds/<id>/<file>`: thrust.prg / play.prg / .sym / .vs / log, with
       CORS (+ Private-Network) so c64-ready on another origin can load them.
 - [x] KickAss errors parsed and shown with the table label of the line.
-- [x] `THRUST_MOD_SRC` / `THRUST_BACKUP_DIR` override the paths (used by tests).
+- [x] `THRUST_MOD_SRC` overrides the mod path (used by tests).
 
 ### Phase 5 - run in c64-ready - done
 - [x] `c64-ready` (npm, 2.5.0) embedded: `C64Player` + `CanvasRenderer` in an
@@ -169,6 +169,29 @@ increasing rows. The tables are generated, never edited by hand:
       (autosaves made before the change had none); a toast says when the mod
       source changed on disk since the project was loaded, or when the server
       is too old to report the layout.
+
+### Objects follow the terrain - done
+- [x] With snapping on, objects resting on the terrain before a wall edit are
+      re-snapped after it (drag, insert, delete, nudge, typed row/X); objects
+      placed freely stay put. "Snap all to terrain" fixes a whole level.
+
+### Objects drawn as sprites - done
+- [x] Objects are drawn with the game's sprites (frames $22-$2E, generated
+      into `src/model/sprites.ts` by `scripts/gen-sprites.ts`) at the game's
+      position, instead of their collision boxes (fuel's box reaches 3 rows
+      below the sprite). One colour per type, or the level's game colours
+      (View option). Selection and hit testing use the visible sprite bounds.
+
+### Games are JSON files - done
+- [x] The mod source is a read-only template (no more "Save to mod source",
+      `PUT /api/source` or backups). A game = one JSON file
+      (`format: thrust-level-editor/game`, version 1, name, levelsAsm,
+      tablesAsm, levels); old "Save JSON" files still open.
+- [x] Game section: name, file + unsaved-changes status, Save (Ctrl+S), Save
+      as, Open (Ctrl+O, or drop), New from template; confirm before discarding
+      unsaved changes. File System Access API where available (Save rewrites
+      the same file), download / file input elsewhere.
+- [x] Autosave keeps the game, its file name and whether it was saved.
 
 ## After the MVP
 - [ ] New levels (7+): pointer/lookup table entries, `cmp #$06`, placement in

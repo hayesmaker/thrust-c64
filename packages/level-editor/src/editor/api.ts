@@ -42,8 +42,6 @@ export interface Source {
 
 export const getSource = () => call<Source>('GET', '/api/source');
 
-export const putSource = (levelsAsm: string, tablesAsm: string, baseHash: string | null) =>
-  call<{ hash: string; backup: string }>('PUT', '/api/source', { levelsAsm, tablesAsm, baseHash });
 
 export const build = (levelsAsm: string, tablesAsm: string, startLevel: number | null) =>
   call<BuildResult>('POST', '/api/build', { levelsAsm, tablesAsm, startLevel });

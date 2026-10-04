@@ -5,9 +5,11 @@ Firebird 1986) in your browser: drag the cave walls into shape, place guns,
 fuel and the pod, set where the ship restarts, pick gravity and colours, and
 press one button to play your level in a C64 emulator.
 
-It edits the **thrusty-levels** mod (`packages/thrusty-levels`). Your changes
-end up in two source files of that mod, `levels.asm` and `level_tables.asm`,
-which build into a normal C64 program (`.prg`).
+It is built on the **thrusty-levels** mod (`packages/thrusty-levels`). The
+mod's levels are the **template**: every new game starts as a copy of them.
+Each game you make is saved as **one JSON file**, wherever you like, so you can
+keep as many games as you want and never have to touch the mod's source files.
+Building turns a game into a normal C64 program (`.prg`).
 
 ![The editor: level 2 with a wall point selected](img/overview.png)
 
@@ -48,13 +50,15 @@ npm run dev
 ```
 
 Open the address it prints (normally <http://localhost:5173>). The editor
-opens the six levels of the mod straight away.
+starts a new game from the template straight away: the six levels of the mod,
+ready to change. To carry on with a game you saved, click **Open…** (see
+[Saving your work](#12-saving-your-work)).
 
 Prefer a fixed address? `npm run serve` builds the editor and serves it at
 <http://127.0.0.1:5180>.
 
-> The editor server can write your mod source (only when you click
-> **Save to mod source**), so it only listens on your own computer.
+> The editor server only reads the mod (it never changes it) and runs
+> KickAssembler for builds. It listens on your own computer only.
 
 ## 2. The screen
 
@@ -68,7 +72,7 @@ rock in the level's colour, the cave in black. On top of it:
 | grey dot at the top | the fixed start of a wall (cannot be moved) |
 | dashed line below the last point | the wall carries on straight down from there |
 | dashed wall segment | an uneven slope (costs extra memory, see [5](#5-editing-the-cave-walls)) |
-| coloured boxes with numbers | objects (guns, fuel, pod stand, reactor, door switches) |
+| game sprites with numbers | objects: red guns, yellow fuel, violet pod stand with its pod, orange reactor, pink door switches |
 | white crosses `start`, `R1`, `R2`... | restart points |
 | dashed boxes | roughly what the screen shows when the ship restarts there |
 | red dashed vertical line | the edge of the world: X wraps around from `$FF` to `$00` |
@@ -80,8 +84,9 @@ position under the mouse.
 
 **The panel (right).** From top to bottom:
 
-* **Level**: pick level 0-5 ("mission 1-6"), memory meters.
-* **Build and play**: build the game and play it, save to the mod source.
+* **Game**: the game's name and file, Save, Open, New from template.
+* **Level**: pick level 0-5 ("mission 1-6"), memory meters, reset a level.
+* **Build and play**: build the game and play it.
 * **Selection**: details of whatever you clicked (wall point, object or
   restart point), with fields you can type into.
 * **Checks**: problems with the level. Click one to jump to the object.
@@ -89,7 +94,7 @@ position under the mouse.
 * **Restart points**: the list, add a restart point.
 * **Gravity and colours**, **Terrain tables** (the raw numbers): click the
   heading to open them.
-* **Export**, **Project**, **View**, **Controls**.
+* **Assembler files**, **View**, **Controls**.
 
 ## 3. Moving around
 
@@ -175,6 +180,13 @@ wall where it is around the door, or the door will not fit the cave any more.
 | generator | the reactor: shooting it silences the guns for a while; hit it too often and the planet starts a countdown to explode |
 | door switch R / L | opens the door (levels 3-5 only); sits against a wall |
 
+Objects are drawn with the game's own sprites, at the place the game draws
+them, so what rests on the floor in the editor rests on it in the game. Each
+kind has its own colour (the swatches in the panel match). Tick **objects in
+the level's game colours** under **View** to see them in this level's real
+colours instead: in the game, guns, the pod stand and the reactor dome share
+one colour.
+
 **Add** an object with the buttons in the **Objects** section: it appears in
 the middle of the map, already resting on the nearest floor. **Drag** it where
 you want it.
@@ -183,8 +195,16 @@ you want it.
 game: fuel, pod stand, reactor and upward guns rest on the floor below them,
 downward guns hang from the ceiling above, door switches stick to the wall
 beside them. Hold **Alt** while dragging to place freely, or turn snapping off
-under **View**. **Snap to terrain** in the panel puts a selected object back
-on the ground. Up/down arrow keys nudge objects without snapping.
+under **View**. Up/down arrow keys nudge objects without snapping.
+
+While snapping is on, objects that rest on the terrain **follow it when you
+edit a wall**: lower a floor and the fuel on it goes down with it. Objects you
+placed freely (not resting) stay where they are.
+
+**Snap to terrain** in the panel puts the selected object back on the ground;
+**Snap all to terrain** (Objects section) does it for every object of the
+level. Use it after loading a level whose terrain was changed by hand, or when
+Checks says objects are "not resting on the terrain".
 
 **Guns.** Select a gun to see its firing arc (red). Set:
 
@@ -280,8 +300,8 @@ room. The quickest savings are dashed slopes: make them even with Shift-drag.
 ![Playing level 3 in the built-in emulator](img/play.png)
 
 **Build & play** (or **Ctrl + Enter**) builds the game with your changes and
-starts it in the built-in C64 emulator. It takes about a second. Nothing is
-written to the mod source.
+starts it in the built-in C64 emulator. It takes about a second. The build
+uses a temporary copy of the mod; nothing is written to the mod's files.
 
 With **start the game on this level** ticked (the default), the game starts on
 the level you are editing, so you do not have to play through the others.
@@ -316,31 +336,51 @@ changed under **View**).
 
 ## 12. Saving your work
 
-**Autosave.** Every change is saved in your browser as you work. Close the tab
-and come back: your project is still there. Undo / Redo (Ctrl+Z /
-Ctrl+Shift+Z) work across all edits.
+**A game is a file.** Each game you make is one `.json` file holding all six
+levels. Keep them wherever you like, copy them, share them, put them in
+version control: the editor does not mind. The mod's own source files are the
+template and never change.
 
-**Save to mod source.** When you are happy with a change, click **Save to mod
-source…** under Build and play. The editor shows what changed ("level 0:
-terrain, objects") and asks before writing `levels.asm` and
-`level_tables.asm` in `packages/thrusty-levels/src`. The previous files are
-copied to `packages/level-editor/.backups/` first. Then build the mod as
-usual (`./packages/thrusty-levels/build.sh`) or commit it.
+The **Game** section at the top of the panel:
 
-If those files were changed by something else since you opened them (another
-editor, git), the editor refuses to overwrite them. Use **Save JSON** to keep
-your work, then **Load mod source** to start from the files on disk.
+| | |
+|--|--|
+| **name** | the game's name. Saving names the file after it ("Big Caves" → `big-caves.json`). |
+| file line | the file the game was opened from or saved to (or "not saved yet"), and **unsaved changes** when you have edited it since. The browser tab shows a • too. |
+| **Save** (Ctrl+S) | save the game. |
+| **Save as…** (Ctrl+Shift+S) | save it as a new file, e.g. to try something out without changing the original. |
+| **Open…** (Ctrl+O) | open a saved game. You can also drop a `.json` file on the page. |
+| **New from template** | start a new game from the mod's levels. |
 
-**Other ways to keep or move your work (Project and Export sections):**
+Opening a game or starting a new one asks first if you have unsaved changes.
+
+**Where files go.** In Chrome and Edge, Save asks where to save the first time
+and then saves to the same file each time. In other browsers (Firefox,
+Safari) Save downloads the file to your downloads folder; save again and you
+get a new download (the browser may call it `big-caves (1).json`). Keep the
+newest one.
+
+**Autosave.** Every change is also kept in your browser as you work. Close the
+tab and come back: the game you were editing is still there, unsaved changes
+included. This is a safety net only: it lives in this browser alone, and it is
+replaced when you open or start another game. **Save** to keep a game.
+
+**Undo / Redo** (Ctrl+Z / Ctrl+Shift+Z) work across all edits. **Reset level
+to template** (Level section) puts the current level back to the template's
+version; Undo brings yours back.
+
+**Assembler files** (click the heading to open it). For building the mod by
+hand or sharing levels as source code:
 
 | Button | Does |
 |--------|------|
-| Save JSON / Open JSON | save or open the whole project as a file |
-| Load mod source | open the mod's files from disk (replaces the current project) |
-| Open .asm files | open `levels.asm` + `level_tables.asm` from anywhere (or drop them on the page) |
-| Revert level | throw away your changes to the current level |
 | Copy terrain .byte lines | copy the current level's wall tables, ready to paste into `levels.asm` |
-| levels.asm / level_tables.asm | download the two files with your changes |
+| levels.asm / level_tables.asm | download the game as the mod's two level files |
+| Import .asm files | start a new game from a `levels.asm` and/or `level_tables.asm` (or drop them on the page) |
+
+To make the game part of the mod itself, put the two downloaded files into
+`packages/thrusty-levels/src` and run `./packages/thrusty-levels/build.sh`.
+They then become the template for new games.
 
 ## 13. Keyboard and mouse reference
 
@@ -359,19 +399,26 @@ your work, then **Load mod source** to start from the files on disk.
 | `1` - `6` | level 0 - 5 |
 | Ctrl + Z, Ctrl + Shift + Z (or Ctrl + Y) | undo, redo |
 | Ctrl + Enter | build and play |
+| Ctrl + S, Ctrl + Shift + S | save, save as |
+| Ctrl + O | open a game |
 
 ## 14. Troubleshooting
 
 **"no build API here" / "the editor server is not running".** Building,
-playing and saving need the editor's server: start the editor with `npm run
-dev` or `npm run serve` (not by opening the HTML file).
+playing and New from template need the editor's server: start the editor with
+`npm run dev` or `npm run serve` (not by opening the HTML file). Saving and
+opening games work without it.
 
 **"Restart the editor server".** The server is older than the page. Stop
 `npm run dev` and start it again.
 
-**"The mod source changed on disk since this project was loaded".** Someone
-(or git) changed the mod's files after you loaded them. Save to mod source will
-refuse. Save JSON if you want to keep your edits, then Load mod source.
+**"not a Thrust level editor game file".** The file is not a saved game (for
+example a different JSON file). Games saved by older versions of the editor
+("Save JSON") open fine.
+
+**Save keeps asking where to save.** After a reload the browser no longer
+knows which file the game came from. Pick the same file again (Chrome and
+Edge), or use the newest download (other browsers).
 
 **The build fails.** Read the error list under Build and play. Out of memory:
 see [Memory](#10-memory). Anything else is usually a hand edit in the `.asm`
@@ -384,6 +431,8 @@ know the mod's levels area. Restart the editor server, then reload the page.
 has the keyboard. Thrust uses the keyboard only (no joystick); see the key
 table in [Building and playing](#11-building-and-playing).
 
-**An object floats above the ground in the game.** Select it and click
-**Snap to terrain**. Checks lists objects that are not resting on the
-terrain.
+**An object floats above the ground (or sinks into it) in the game.** The
+terrain under it was changed while snapping was off, or by hand in the `.asm`
+file. Click **Snap all to terrain** in the Objects section (or select the
+object and click **Snap to terrain**). Checks lists objects that are not
+resting on the terrain.

@@ -15,14 +15,16 @@ import {
   wallTables,
 } from '../model/level';
 import { ANGLE_NAMES, GUN_SPREAD, gunArc, gunBase, gunParam, gunSpread, isGun, snapObject } from '../model/objects';
-import { encodeWall, pointsToRuns, segmentSteps } from '../model/terrain';
+import { pointsToRuns, segmentSteps } from '../model/terrain';
 import { type MemState, levelBytes, memoryAreas, memoryIssues, validateLevel, worstState } from '../model/validate';
-import { type BuildError, type BuildResult, type Source, ApiError, build, buildFileUrl, fetchBuildFile, getSource, putSource } from './api';
+import { type BuildError, type BuildResult, type Source, build, buildFileUrl, fetchBuildFile, getSource } from './api';
 import { download, terrainAsm } from './export';
+import { confirmDiscard, forgetFile, openGameFile, pickGameFile, saveGame } from './files';
+import { swatchColour } from './look';
 import { deleteSelection } from './input';
 import { addObject, addRestart, centreWindow, movePoint, reorderObject, sortObjects } from './ops';
 import { type PlayerOverlay } from './player';
-import { type Side, type Store } from './store';
+import { DEFAULT_NAME, type Side, type Store } from './store';
 import { WALL_COLOUR, type View } from './view';
 
 const COLOUR_LABELS: Record<string, string> = {
@@ -43,7 +45,6 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   root.innerHTML = `
     <header>
       <h1>Thrust level editor</h1>
-      <div class="muted" id="p-source">no source loaded</div>
       <div class="row">
         <button id="p-undo" title="Ctrl+Z">Undo</button>
         <button id="p-redo" title="Ctrl+Shift+Z">Redo</button>
@@ -51,10 +52,25 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       </div>
     </header>
     <section>
+      <h2>Game</h2>
+      <label>name <input type="text" id="p-game-name" spellcheck="false" maxlength="80"></label>
+      <div class="small" id="p-game-file"></div>
+      <div class="row">
+        <button id="p-save" class="primary" title="Ctrl+S">Save</button>
+        <button id="p-save-as" title="Ctrl+Shift+S">Save as…</button>
+      </div>
+      <div class="row">
+        <button id="p-open-json" title="Ctrl+O: open a game (.json)">Open…</button>
+        <button id="p-new" title="a new game from the template levels (packages/thrusty-levels/src)">New from template</button>
+      </div>
+      <input type="file" id="p-file-json" accept=".json,application/json" hidden>
+    </section>
+    <section>
       <h2>Level</h2>
       <div class="levels" id="p-levels"></div>
       <div class="muted" id="p-level-info"></div>
       <div id="p-memory"></div>
+      <div class="row"><button id="p-revert" title="put this level back the way the template has it">Reset level to template</button></div>
     </section>
     <section>
       <h2>Build and play</h2>
@@ -69,7 +85,6 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         <button id="p-dl-prg" disabled>Download PRG</button>
         <button id="p-c64ready" disabled title="open the build in c64-ready (URL under View)">Open in c64-ready</button>
       </div>
-      <div class="row"><button id="p-save-src" title="write packages/thrusty-levels/src (a backup is kept)">Save to mod source…</button></div>
     </section>
     <section>
       <h2 id="p-sel-title">Selection</h2>
@@ -83,7 +98,10 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       <summary>Objects <span class="muted" id="p-obj-count"></span></summary>
       <div class="add-row" id="p-add-obj"></div>
       <ol class="list" id="p-objects" start="0"></ol>
-      <div class="row"><button id="p-sort" title="pod stand, generator, fuel, then the rest">Sort objects</button></div>
+      <div class="row">
+        <button id="p-snap-all" title="put every object of this level back on the terrain">Snap all to terrain</button>
+        <button id="p-sort" title="pod stand, generator, fuel, then the rest">Sort objects</button>
+      </div>
     </details>
     <details open>
       <summary>Restart points</summary>
@@ -100,38 +118,25 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       <summary>Terrain tables</summary>
       <div id="p-tables"></div>
     </details>
-    <section>
-      <h2>Export</h2>
+    <details>
+      <summary>Assembler files</summary>
       <div class="col">
-        <button id="p-copy" class="primary">Copy terrain .byte lines</button>
+        <button id="p-copy">Copy terrain .byte lines</button>
         <div class="row">
           <button id="p-dl-levels">levels.asm</button>
           <button id="p-dl-tables">level_tables.asm</button>
         </div>
-        <div class="muted small">Objects, restart points, gravity and colours are in the two files.</div>
-      </div>
-    </section>
-    <section>
-      <h2>Project</h2>
-      <div class="col">
-        <button id="p-load-src" title="packages/thrusty-levels/src via the dev server">Load mod source</button>
-        <div class="row">
-          <button id="p-open-asm">Open .asm files</button>
-          <button id="p-revert">Revert level</button>
-        </div>
-        <div class="row">
-          <button id="p-save-json">Save JSON</button>
-          <button id="p-open-json">Open JSON</button>
-        </div>
+        <div class="muted small">The game as the mod's two level files (objects, restart points, gravity and colours included), for building by hand.</div>
+        <div class="row"><button id="p-open-asm" title="start a new game from levels.asm and/or level_tables.asm">Import .asm files</button></div>
       </div>
       <input type="file" id="p-file-asm" accept=".asm,.s,.txt" multiple hidden>
-      <input type="file" id="p-file-json" accept=".json" hidden>
-    </section>
+    </details>
     <section>
       <h2>View</h2>
       <label><input type="checkbox" id="p-show-objects" checked> objects and restart points</label>
       <label><input type="checkbox" id="p-show-screen" checked> screen windows</label>
       <label><input type="checkbox" id="p-show-arcs"> firing arcs of all guns</label>
+      <label><input type="checkbox" id="p-game-colours"> objects in the level's game colours (off: one colour per type)</label>
       <label><input type="checkbox" id="p-snap" checked> objects snap to the terrain (Alt while dragging inverts)</label>
       <label>c64-ready URL <input type="text" id="p-c64ready-url" spellcheck="false"></label>
     </section>
@@ -152,11 +157,13 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     <div id="toast"></div>
   `;
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => root.querySelector<T>('#' + id)!;
-  /** Apply an edit to the current level as one undo step. */
-  const edit = (fn: (l: Level) => boolean | void) => {
+  /** Apply an edit to the current level as one undo step. `terrain`: the
+   *  edit changed a wall, so resting objects follow it. */
+  const edit = (fn: (l: Level) => boolean | void, terrain = false) => {
     if (!store.current) return;
     store.checkpoint();
     if (fn(store.current) === false) store.cancelCheckpointIfUnchanged();
+    else if (terrain) store.terrainChanged();
     else store.changed();
   };
 
@@ -192,6 +199,18 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       });
     addBox.append(b);
   });
+  $('p-snap-all').onclick = () =>
+    edit((l) => {
+      let n = 0;
+      l.objects = l.objects.map((o) => {
+        const s = snapObject(o, store.decoded.left, store.decoded.right);
+        if (!s || (s.x === o.x && s.y === o.y)) return o;
+        n++;
+        return { ...o, ...s };
+      });
+      toast(n ? `Snapped ${n} object${n > 1 ? 's' : ''} to the terrain` : 'All objects already rest on the terrain');
+      return n > 0;
+    });
   $('p-sort').onclick = () =>
     edit((l) => {
       store.selection = null;
@@ -262,44 +281,82 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   $('p-dl-levels').onclick = () => store.project && download('levels.asm', saved().levelsAsm);
   $('p-dl-tables').onclick = () => store.project && download('level_tables.asm', saved().tablesAsm);
 
-  // ---- project I/O
-  $('p-load-src').onclick = async () => {
-    if (store.project && store.canUndo() && !confirm('Replace the current project with the mod source? Unsaved edits are lost.'))
-      return;
+  // ---- game files
+  const nameInput = $<HTMLInputElement>('p-game-name');
+  nameInput.onchange = () => {
+    const name = nameInput.value.trim();
+    if (name && name !== store.name) store.setName(name);
+    else nameInput.value = store.name;
+  };
+  const save = async (as: boolean) => {
     try {
-      await loadModSource(store);
-      view.fitLevel();
-      toast('Loaded mod source');
+      const f = await saveGame(store, as);
+      if (f) toast(`Saved ${f}`);
     } catch (e) {
-      toast(`Could not load the mod source (${e}). Use "Open .asm files".`);
+      toast(`Save failed: ${e instanceof Error ? e.message : e}`);
     }
   };
-  const fileAsm = $<HTMLInputElement>('p-file-asm');
-  $('p-open-asm').onclick = () => fileAsm.click();
-  fileAsm.onchange = async () => {
-    if (fileAsm.files?.length) await openAsmFiles(store, [...fileAsm.files]).then(toast, (e) => toast(String(e)));
-    fileAsm.value = '';
-    view.fitLevel();
-  };
-  $('p-save-json').onclick = () =>
-    store.project && download('thrust-levels.json', JSON.stringify(store.toJSON()), 'application/json');
+  $('p-save').onclick = () => save(false);
+  $('p-save-as').onclick = () => save(true);
   const fileJson = $<HTMLInputElement>('p-file-json');
-  $('p-open-json').onclick = () => fileJson.click();
+  const opened = (name: string) => {
+    view.fitLevel();
+    toast(`Opened ${name}`);
+  };
+  const open = async () => {
+    if (!confirmDiscard(store, 'Open another game?')) return;
+    try {
+      if (!(await pickGameFile(store))) return fileJson.click();
+      if (store.fileName) opened(store.fileName);
+    } catch (e) {
+      toast(`Could not open the game: ${e instanceof Error ? e.message : e}`);
+    }
+  };
+  $('p-open-json').onclick = open;
   fileJson.onchange = async () => {
     const f = fileJson.files?.[0];
     fileJson.value = '';
     if (!f) return;
     try {
-      store.fromJSON(JSON.parse(await f.text()));
-      view.fitLevel();
-      toast(`Opened ${f.name}`);
+      await openGameFile(store, f);
+      opened(f.name);
     } catch (e) {
-      toast(`Not a project file: ${e}`);
+      toast(`Could not open ${f.name}: ${e instanceof Error ? e.message : e}`);
     }
+  };
+  $('p-new').onclick = async () => {
+    if (!confirmDiscard(store, 'Start a new game from the template?')) return;
+    try {
+      await loadModSource(store);
+      view.fitLevel();
+      toast('New game from the template');
+    } catch (e) {
+      toast(`Could not load the template (${e instanceof Error ? e.message : e}). Is the editor server running?`);
+    }
+  };
+  window.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || store.inputPaused || !store.project) return;
+    const k = e.key.toLowerCase();
+    if (k === 's') {
+      e.preventDefault();
+      save(e.shiftKey);
+    } else if (k === 'o') {
+      e.preventDefault();
+      open();
+    }
+  });
+  const fileAsm = $<HTMLInputElement>('p-file-asm');
+  $('p-open-asm').onclick = () => {
+    if (confirmDiscard(store, 'Start a new game from .asm files?')) fileAsm.click();
+  };
+  fileAsm.onchange = async () => {
+    if (fileAsm.files?.length) await openAsmFiles(store, [...fileAsm.files]).then(toast, (e) => toast(String(e)));
+    fileAsm.value = '';
+    view.fitLevel();
   };
   $('p-revert').onclick = () => {
     const p = store.project;
-    if (!p || !confirm(`Revert level ${store.level} to the loaded source?`)) return;
+    if (!p || !confirm(`Reset level ${store.level} to the template's version? (Undo brings your version back.)`)) return;
     store.checkpoint();
     p.levels[store.level] = original(p).levels[store.level];
     store.selection = null;
@@ -370,40 +427,6 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     window.open(`${base}${base.includes('?') ? '&' : '?'}game=${encodeURIComponent(prgUrl)}`, '_blank');
   };
 
-  // ---- save to mod source
-  $('p-save-src').onclick = async () => {
-    const p = store.project;
-    if (!p) return;
-    const changes = describeChanges(p);
-    if (!changes.length) return toast('No changes to save');
-    if (
-      !confirm(
-        `Write packages/thrusty-levels/src/levels.asm and level_tables.asm?\n\n${changes.join('\n')}\n\n` +
-          'The current files are backed up to packages/level-editor/.backups/ first.',
-      )
-    )
-      return;
-    const out = saveProject(p);
-    try {
-      const r = await putSource(out.levelsAsm, out.tablesAsm, store.sourceHash);
-      p.levelsAsm = out.levelsAsm;
-      p.tablesAsm = out.tablesAsm;
-      store.sourceHash = r.hash;
-      // the files now hold exactly these tables: walls count as unedited again
-      for (const l of p.levels) for (const w of [l.left, l.right]) w.raw ??= encodeWall(w.points);
-      store.changed();
-      toast('Saved to packages/thrusty-levels/src');
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409)
-        alert(
-          'The mod source on disk is not the version this project was loaded from ' +
-            '(it was edited elsewhere, or the project came from files or JSON).\n\n' +
-            'Use "Save JSON" to keep your edits, then "Load mod source" to start from the disk version.',
-        );
-      else toast(`Save failed: ${e instanceof Error ? e.message : e}`);
-    }
-  };
-
   // ---- view toggles
   const toggle = (id: string, fn: (on: boolean) => void) => {
     $<HTMLInputElement>(id).onchange = (e) => {
@@ -414,6 +437,10 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   toggle('p-show-objects', (on) => (view.showObjects = on));
   toggle('p-show-screen', (on) => (view.showScreen = on));
   toggle('p-show-arcs', (on) => (view.showArcs = on));
+  toggle('p-game-colours', (on) => {
+    view.gameColours = on;
+    store.changed(false); // recolour the swatches
+  });
   toggle('p-snap', (on) => (store.snapObjects = on));
 
   // ---- selection editor (inputs are rebuilt only when the selection changes)
@@ -465,7 +492,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
             const xv = Number(num('s-x').value) & 0xff;
             const dx = ((xv - (cur.x & 0xff) + 384) % 256) - 128; // nearest copy: keep X unwrapped
             return movePoint(w2, sel.index, Number(num('s-row').value), cur.x + dx);
-          });
+          }, true);
         num('s-row').onchange = apply;
         num('s-x').onchange = apply;
         $('s-del').onclick = () => deleteSelection(store);
@@ -631,11 +658,9 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
              ${i === 0 ? 'start' : `restart ${i}`} <span class="muted">ship ${hex2(r.shipX)}, ${hex3(r.shipY)}</span></li>`,
       )
       .join('');
-    // object type swatches use this level's colours
-    for (const sw of root.querySelectorAll<HTMLElement>('.swatch[data-type]')) {
-      const t = Number(sw.dataset.type);
-      sw.style.background = PALETTE[t === 4 ? 7 : t >= 7 ? 4 : l.colours.objects || 1];
-    }
+    // object type swatches match the objects on the canvas
+    for (const sw of root.querySelectorAll<HTMLElement>('.swatch[data-type]'))
+      sw.style.background = swatchColour(Number(sw.dataset.type), l.colours, view.gameColours);
   }
 
   function renderChecks(l: Level) {
@@ -706,7 +731,12 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   function update() {
     const p = store.project;
     const l = store.current;
-    $('p-source').textContent = p ? store.sourceName : 'no source loaded';
+    if (document.activeElement !== nameInput) nameInput.value = store.name;
+    const file = store.fileName ?? 'not saved yet';
+    $('p-game-file').innerHTML = !p
+      ? '<span class="muted">no game loaded</span>'
+      : `<span class="muted">${esc(file)}</span>${store.dirty ? ' · <span class="warn">unsaved changes</span>' : ''}`;
+    document.title = `${store.dirty ? '• ' : ''}${store.name} – Thrust level editor`;
     $<HTMLButtonElement>('p-undo').disabled = !store.canUndo();
     $<HTMLButtonElement>('p-redo').disabled = !store.canRedo();
     [...levelBox.children].forEach((b, n) => b.classList.toggle('active', n === store.level));
@@ -764,7 +794,8 @@ export function toast(msg: string): void {
 export async function loadModSource(store: Store): Promise<void> {
   const s = await getSource();
   applyLayout(store, s);
-  store.load(loadProject(s.levelsAsm, s.tablesAsm), s.name, s.hash);
+  forgetFile();
+  store.load(loadProject(s.levelsAsm, s.tablesAsm), DEFAULT_NAME);
 }
 
 /** The layout belongs to the mod source on disk (thrust.asm), not to the
@@ -783,30 +814,10 @@ function applyLayout(store: Store, s: Source): void {
 export async function refreshFromServer(store: Store): Promise<void> {
   const s = await getSource();
   applyLayout(store, s);
-  if (store.sourceHash && s.hash !== store.sourceHash)
-    toast('The mod source changed on disk since this project was loaded: "Save to mod source" will refuse. "Load mod source" starts from the disk version.');
   store.changed(false);
 }
 
 /** What differs from the loaded source, one line per level. */
-function describeChanges(p: Project): string[] {
-  const o = original(p);
-  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  const out: string[] = [];
-  p.levels.forEach((l, n) => {
-    const ol = o.levels[n];
-    const parts: string[] = [];
-    if (!same(wallTables(l.left), wallTables(ol.left)) || !same(wallTables(l.right), wallTables(ol.right))) parts.push('terrain');
-    if (!same(l.objects, ol.objects)) parts.push('objects');
-    if (!same(l.restarts.map(sortKeys), ol.restarts.map(sortKeys))) parts.push('restart points');
-    if (l.gravity !== ol.gravity) parts.push('gravity');
-    if (!same(l.colours, ol.colours)) parts.push('colours');
-    if (parts.length) out.push(`level ${n}: ${parts.join(', ')}`);
-  });
-  return out;
-}
-
-const sortKeys = (v: object) => Object.fromEntries(Object.entries(v).sort());
 
 /** KickAssembler errors with the table label each line belongs to. */
 function renderBuildErrors(r: BuildResult, src: { levelsAsm: string; tablesAsm: string }): string {
@@ -854,6 +865,7 @@ export async function openAsmFiles(store: Store, files: File[]): Promise<string>
     names.push(f.name);
   }
   if (!levels || !tables) throw new Error('Need both levels.asm and level_tables.asm');
-  store.load(loadProject(levels, tables), names.join(' + '));
+  forgetFile();
+  store.load(loadProject(levels, tables), 'imported game');
   return `Opened ${names.join(', ')}`;
 }

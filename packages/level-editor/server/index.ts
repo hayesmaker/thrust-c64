@@ -1,13 +1,13 @@
 // Standalone editor server: the built app (dist/) + the build API.
 //   npm run serve            (vite build, then this; http://127.0.0.1:5180)
 //   PORT=8080 HOST=0.0.0.0 node server/index.ts
-// Listens on 127.0.0.1 by default: the API can write the mod source.
+// Listens on 127.0.0.1 by default: the API runs KickAssembler on request.
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { createApi } from './api.ts';
-import { BACKUP_DIR, C64_ASSETS, DIST_DIR, MOD_SRC } from './paths.ts';
+import { C64_ASSETS, DIST_DIR, MOD_SRC } from './paths.ts';
 
 const PORT = Number(process.env.PORT ?? 5180);
 const HOST = process.env.HOST ?? '127.0.0.1';
@@ -26,7 +26,7 @@ if (!existsSync(join(DIST_DIR, 'index.html'))) {
   process.exit(1);
 }
 
-const api = createApi({ modDir: MOD_SRC, backupDir: BACKUP_DIR });
+const api = createApi({ modDir: MOD_SRC });
 
 createServer((req, res) => {
   api(req, res, () => {

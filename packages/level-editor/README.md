@@ -14,20 +14,30 @@ npm run serve     # or: production build served by server/index.ts at http://127
 npm test          # tests (KickAssembler ones need java and /opt/KickAss.jar; KICKASS=... overrides)
 ```
 
-The editor opens `packages/thrusty-levels/src/levels.asm` + `level_tables.asm`.
-Edits autosave in the browser. **Build & play** (Ctrl+Enter) builds a temp copy
+The mod's `packages/thrusty-levels/src/levels.asm` + `level_tables.asm` are a
+read-only **template**: the editor starts a new game from them. A game is saved
+as one JSON file (Game section: Save / Save as / Open / New from template;
+in Chrome and Edge, Save writes back to the same file via the File System
+Access API, elsewhere it downloads `<name>.json`). Edits also autosave in the
+browser. **Build & play** (Ctrl+Enter) builds a temp copy
 of the mod with KickAssembler and runs it in the embedded c64-ready emulator,
 starting on the level you are editing (untick "start the game on this level"
 for the normal game). Keys in the game: Space start / shield, A S rotate,
 Shift thrust, Return fire, F5/F7 pause/resume, Esc abort.
 
-**Save to mod source** writes the two files into `packages/thrusty-levels/src`
-after a confirm listing what changed; the previous files are copied to
-`.backups/` first, and it refuses if the files changed on disk since they were
-loaded. Then `./packages/thrusty-levels/build.sh` as usual. Export still offers
-the two files as downloads and the terrain `.byte` lines for copy and paste.
+The editor never writes the mod. "Assembler files" offers the game as the two
+level files (to drop into the mod and build by hand) and the terrain `.byte`
+lines for copy and paste.
 
-`THRUST_MOD_SRC` and `THRUST_BACKUP_DIR` point the server at other folders.
+Game file: `{format: "thrust-level-editor/game", version: 1, name, levelsAsm,
+tablesAsm, levels, level}`: the levels plus the level files they patch, so a
+game builds even after the template changes.
+
+To make a saved game the new template: `npm run game-to-mod -- my-game.json`
+writes its levels into the mod's `levels.asm` / `level_tables.asm` (the rest
+of those files is kept), then `./packages/thrusty-levels/build.sh`.
+
+`THRUST_MOD_SRC` points the server at another mod folder.
 
 **Memory:** the Level section shows a rough meter per place the level data
 lives. For thrusty-levels (which defines `LEVELS_AREA_START/END` in
@@ -45,8 +55,7 @@ also treats a failed `.assert` as an error).
 
 | Route | |
 |---|---|
-| `GET /api/source` | the two files + a hash |
-| `PUT /api/source` | write them (`baseHash` must match the disk; backup first) |
+| `GET /api/source` | the template: the two files + a hash + the memory layout |
 | `POST /api/build` | `{levelsAsm, tablesAsm, startLevel?}` -> `{ok, errors, log, files, id}` |
 | `GET /api/builds/<id>/<file>` | `thrust.prg`, `play.prg` (starts on `startLevel`), `.sym`, `.vs`, `kickass.log` |
 

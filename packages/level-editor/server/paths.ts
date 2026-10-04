@@ -5,9 +5,8 @@ import { dirname, join } from 'node:path';
 
 const HERE = import.meta.dirname;
 export const PACKAGE_DIR = join(HERE, '..');
-/** The mod source the editor opens and saves (override: THRUST_MOD_SRC). */
+/** The mod source: the template for new games and what builds use (override: THRUST_MOD_SRC). */
 export const MOD_SRC = process.env.THRUST_MOD_SRC ?? join(PACKAGE_DIR, '../thrusty-levels/src');
-export const BACKUP_DIR = process.env.THRUST_BACKUP_DIR ?? join(PACKAGE_DIR, '.backups');
 export const DIST_DIR = join(PACKAGE_DIR, 'dist');
 
 /** c64-ready's runtime assets, served by the editor under /c64/. */

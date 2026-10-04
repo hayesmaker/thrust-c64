@@ -1,4 +1,5 @@
 import './style.css';
+import { confirmDiscard, openGameFile } from './editor/files';
 import { attachInput } from './editor/input';
 import { loadModSource, mountPanel, openAsmFiles, refreshFromServer, toast } from './editor/panel';
 import { PlayerOverlay } from './editor/player';
@@ -25,15 +26,17 @@ store.onChange(() => {
   updatePanel();
 });
 
-// drop .asm / .json files anywhere
+// drop a game (.json) or .asm files anywhere
 window.addEventListener('dragover', (e) => e.preventDefault());
 window.addEventListener('drop', async (e) => {
   e.preventDefault();
   const files = [...(e.dataTransfer?.files ?? [])];
-  if (!files.length) return;
+  if (!files.length || !confirmDiscard(store, `Open ${files.map((f) => f.name).join(', ')}?`)) return;
   try {
-    if (files[0].name.endsWith('.json')) store.fromJSON(JSON.parse(await files[0].text()));
-    else toast(await openAsmFiles(store, files));
+    if (files[0].name.toLowerCase().endsWith('.json')) {
+      await openGameFile(store, files[0]);
+      toast(`Opened ${files[0].name}`);
+    } else toast(await openAsmFiles(store, files));
     view.fitLevel();
   } catch (err) {
     toast(String(err));
@@ -42,9 +45,10 @@ window.addEventListener('drop', async (e) => {
 window.addEventListener('beforeunload', () => store.saveNow());
 
 async function start() {
+  // the game being edited when the page was closed, else a new game from the template
   if (store.restoreAutosave()) {
-    toast('Restored autosaved project');
-    // the memory layout comes from the mod source on disk; offline, keep the autosaved one
+    toast(store.dirty ? `Restored "${store.name}" with its unsaved changes` : `Restored "${store.name}"`);
+    // the memory layout comes from the template on disk; offline, keep the autosaved one
     await refreshFromServer(store).catch(() => {});
   } else {
     try {
