@@ -75,7 +75,7 @@
 .label Lb551=$b23b
 .label music_voice_reg_offset=$244f
 .label L90da=$90da
-.label gfx_load=$6966
+.label gfx_load=$6969
 .label Lac21=$a90b
 .label enter_new_high_score_name=$b211
 .label particle_screen_y=$72
@@ -91,6 +91,7 @@
 .label velocity_vectory_FRAC=$15
 .label music_pulse_lo=$247f
 .label terrain_draw_addr_HI=$77
+.label qr_colour=$2ce4
 .label terrain_data_level_1_B=$1061
 .label L22c9=$22c9
 .label terrain_data_level_1_C=$106e
@@ -138,6 +139,7 @@
 .label music_silenced_flag=$246f
 .label music_temp_ctrl=$2468
 .label L8302=$8302
+.label plot_qr_code=$2cad
 .label Lb587=$b271
 .label add_fuel=$932e
 .label terrain_left_wall_2_counter=$84b8
@@ -221,6 +223,7 @@
 .label level_1_reset_data=$a569
 .label test_level_ended_else_tick_loop=$af61
 .label irq1_timer1_signal=$a1
+.label music_free=$2dba
 .label plot_BCD_loop=$92ea
 .label terrain_draw_addr_LO=$76
 .label clear_screen_and_sprites=$b0e8
@@ -294,6 +297,7 @@
 .label La3c3=$a0ad
 .label irq_raster=$8964
 .label SID_RES_FILT=$d417
+.label qr_cell_row=$2cb7
 .label set_landscape_colour_to_black=$b0b3
 .label key_matrix=$9dda
 .label sound_pulse_sweep_down=$9c52
@@ -337,6 +341,7 @@
 .label go_to_high_score=$af3e
 .label CHROUT=$ffd2
 .label bullet_index=$2d
+.label qr_byte=$2cb9
 .label main2_load=$6183
 .label gravity_INT=$a6
 .label level_5_door_draw_bottom=$925f
@@ -378,6 +383,7 @@
 .label L9a5c=$9a5c
 .label particles_dx_FRAC=$6a0
 .label level_tick_state=$61
+.label qr_bitmap=$6780
 .label level_4_obj_pos_X=$1294
 .label obj_colour_fuel=$84ea
 .label music_instrument_fx=$247c
@@ -472,6 +478,7 @@
 .label plot_line_pixels=$a936
 .label bullet_test_next_jmp=$869c
 .label line_rows_left=$a80e
+.label qr_put_line_pair=$2d18
 .label planet_destroyed_hostile_gun_modifier=$ac75
 .label L9078=$9078
 .label plot_line_bresenham_1=$a926
@@ -694,7 +701,7 @@
 .label teleport_ring_count=$86
 .label sprite_list_shift=$8b8f
 .label handle_generator=$8673
-.label relocator_load=$6935
+.label relocator_load=$6938
 .label L972f=$972f
 .label write_no_bonus=$94dc
 .label jump_fn_1_addr_HI=$a9e3
@@ -770,7 +777,7 @@
 .label create_explosion_loop=$9f0f
 .label set_status_bar_chars=$a4d2
 .label explosion_particle_type=$8d
-.label msg_title=$bb9f
+.label msg_title=$bba2
 .label terrain_left_wall_increment_LO=$84c2
 .label ship_input_rotate=$9e09
 .label plot_ship_return=$98b1
@@ -847,7 +854,7 @@
 .label landscape_draw_part_2=$831d
 .label clear_screen_ptr=$80
 .label terrain_left_wall_1_xpos=$84b4
-.label relocate=$6953
+.label relocate=$6956
 .label terrain_left_wall_2_index=$84b9
 .label terrain_draw_table_1=$9f7
 .label level_4_obj_type=$12cd
@@ -962,6 +969,7 @@
 .label music_play_frame=$200b
 .label terrain_right_wall_2_xpos=$84bd
 .label sprite_bands_count_ok=$8c68
+.label qr_save_x=$2d29
 .label player_teleport=$abeb
 .label level_3_door_draw_loop=$91d0
 .label La4e9=$a1d3
@@ -976,7 +984,7 @@
 .label music_note_length_left=$2458
 .label plot_line_bresenham_1_addr_HI=$a928
 .label calculate_player_position_from_midpoint=$9e77
-.label entry=$6935
+.label entry=$6938
 .label pod_window_xpos_INT=$52
 .label read_key_next_bit=$8e06
 .label plot_char_A=$8f4e
@@ -1002,7 +1010,7 @@
 .label L21fd=$21fd
 .label music_instruments=$2485
 .label draw_fuel_beam=$ab53
-.label filler2_load=$7666
+.label filler2_load=$7669
 .label screen_addr_hi_temp=$79
 .label SID_FC_LO=$d415
 .label object_sprite_coords=$8868
@@ -1154,6 +1162,7 @@
 .label line_step_fn_HI=$a809
 .label planet_explode_anim=$2
 .label text_ptr_HI=$b6
+.label qr_data=$2d3a
 .label velocity_vectory_INT=$16
 .label terrain_subtract_xpos_fn=$84d7
 .label write_score=$92d7
@@ -1196,7 +1205,7 @@
 .label L8ff0=$8ff0
 .label new_ship_ypos_INT_HI=$75
 .label SID_V1_SR=$d406
-.label main_end=$bbb5
+.label main_end=$bbb8
 .label pod_spr_y=$9ab0
 .label pod_spr_x=$9ab1
 .label Lb3e1=$b0cb
@@ -1336,6 +1345,7 @@
 .label calc_ship_window_xpos_INT=$77
 .label plot_ship_and_pod=$9799
 .label level_reset_with_pod_flag=$a390
+.label qr_expand=$2d2a
 .label terrain_right_wall_1_xpos=$84ba
 .label pod_attached_flag_1=$22
 .label level_obj_pos_Y_EXT_lookup=$a660
@@ -1460,7 +1470,7 @@
 .label music_pattern_01=$2a50
 .label irq_no_planet_flash=$8a0e
 .label sfx_unused=$9b4b
-.label relocate_loop=$6955
+.label relocate_loop=$6958
 .label music_pattern_04=$2a8c
 .label L90b4=$90b4
 .label music_pattern_03=$2a6e

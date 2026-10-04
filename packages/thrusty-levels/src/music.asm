@@ -819,57 +819,9 @@ L2c9c:
     sta music_silenced_flag                     // $2ca9  
     rts                                         // $2cac  
 music_unused:
-    .byte $ff,$ff,$ff,$ff,$ff,$ae,$0c,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  // $2cad  
-    .byte $ff,$00,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff,$ff,$0c,$ff,$ff,$ff,$00  // $2cbd  
-    .byte $ff,$ff,$20,$81,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ff,$ff,$00  // $2ccd  
-    .byte $ff,$8e,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$04,$00,$ff,$ff,$ff,$00  // $2cdd  
-    .byte $ff,$a6,$00,$df,$ff,$0e,$00,$ff,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff  // $2ced  
-    .byte $ff,$c1,$b2,$bf,$ff,$ff,$ff,$ff,$00,$00,$fb,$ff,$00,$00,$ee,$00  // $2cfd  
-    .byte $00,$73,$ff,$7f,$ff,$10,$fb,$00,$00,$ff,$00,$00,$00,$00,$00,$00  // $2d0d  
-    .byte $00,$00,$ff,$00,$00,$00,$ff,$00,$00,$00,$00,$00,$f3,$00,$10,$fb  // $2d1d  
-    .byte $ef,$00,$ff,$00,$00,$ff,$00,$00,$00,$ff,$fb,$00,$00,$00,$00,$00  // $2d2d  
-    .byte $00,$00,$ff,$00,$ff,$ff,$00,$7b,$00,$ff,$ef,$aa,$00,$f7,$00,$00  // $2d3d  
-    .byte $00,$ff,$00,$f1,$ff,$ff,$ff,$00,$00,$00,$00,$f7,$00,$00,$00,$00  // $2d4d  
-    .byte $00,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$00,$00,$00,$ff,$00  // $2d5d  
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $2d6d  
-    .byte $00,$00,$ff,$00,$0c,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00  // $2d7d  
-    .byte $ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ef,$ff,$ff  // $2d8d  
-    .byte $ff,$ff,$ff,$ff,$2c,$ff,$ff,$00,$ff,$ff,$ef,$00,$2e,$ff,$ff,$0c  // $2d9d  
-    .byte $ff,$ff,$ff,$ff,$ff,$ae,$0c,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  // $2dad  
-    .byte $ff,$00,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff,$ff,$0c,$ff,$ff,$ff,$00  // $2dbd  
-    .byte $ff,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ff,$ff,$00  // $2dcd  
-    .byte $ff,$8e,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$04,$00,$ff,$ff,$ff,$00  // $2ddd  
-    .byte $ff,$a6,$00,$9f,$ff,$0e,$00,$ff,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff  // $2ded  
-    .byte $ff,$c1,$b2,$bf,$ff,$ff,$fd,$ff,$00,$00,$ff,$ff,$00,$00,$ee,$00  // $2dfd  
-    .byte $00,$73,$ff,$7f,$ff,$10,$fb,$00,$00,$ff,$00,$00,$00,$00,$00,$00  // $2e0d  
-    .byte $00,$00,$ff,$00,$00,$00,$ff,$00,$00,$00,$00,$00,$f3,$00,$10,$fb  // $2e1d  
-    .byte $ef,$00,$ff,$00,$00,$ff,$00,$00,$00,$ff,$fb,$00,$00,$00,$00,$00  // $2e2d  
-    .byte $00,$00,$ff,$00,$ff,$ff,$00,$7b,$00,$ff,$ef,$aa,$00,$f7,$00,$00  // $2e3d  
-    .byte $00,$ff,$00,$f1,$ff,$ff,$ff,$00,$00,$00,$00,$f7,$00,$00,$00,$00  // $2e4d  
-    .byte $00,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$00,$00,$00,$ff,$00  // $2e5d  
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $2e6d  
-    .byte $00,$00,$ff,$00,$0c,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00  // $2e7d  
-    .byte $ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ef,$ff,$ff  // $2e8d  
-    .byte $ff,$ff,$ff,$ff,$2c,$ff,$ff,$00,$ff,$ff,$ef,$00,$2e,$ff,$ff,$0c  // $2e9d  
-    .byte $ff,$ff,$ff,$ff,$ff,$ae,$0c,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  // $2ead  
-    .byte $ff,$00,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff,$ff,$0c,$ff,$ff,$ff,$00  // $2ebd  
-    .byte $ff,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ff,$ff,$00  // $2ecd  
-    .byte $ff,$8e,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$04,$00,$ff,$ff,$ff,$00  // $2edd  
-    .byte $ff,$a6,$00,$be,$ff,$0e,$00,$ff,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff  // $2eed  
-    .byte $ff,$c1,$b2,$bf,$ff,$ff,$fd,$ff,$00,$00,$ff,$ff,$00,$00,$ee,$00  // $2efd  
-    .byte $00,$71,$ff,$7f,$ff,$10,$7b,$00,$00,$ff,$00,$00,$00,$00,$00,$00  // $2f0d  
-    .byte $00,$00,$ff,$00,$00,$00,$ff,$00,$00,$00,$00,$00,$f3,$00,$10,$fb  // $2f1d  
-    .byte $ef,$00,$ff,$00,$00,$ff,$00,$00,$00,$ff,$fb,$00,$00,$00,$00,$00  // $2f2d  
-    .byte $00,$00,$ff,$00,$ff,$7d,$00,$7b,$00,$ff,$ef,$aa,$00,$f7,$00,$00  // $2f3d  
-    .byte $00,$ff,$00,$f1,$ff,$ff,$ff,$00,$00,$00,$00,$f7,$00,$00,$00,$00  // $2f4d  
-    .byte $00,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$00,$00,$00,$ff,$00  // $2f5d  
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $2f6d  
-    .byte $00,$00,$ff,$00,$0c,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00  // $2f7d  
-    .byte $ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ef,$ff,$ff  // $2f8d  
-    .byte $ff,$ff,$ff,$ff,$2c,$ff,$ff,$00,$ff,$ff,$ef,$00,$2e,$ff,$ff,$0c  // $2f9d  
-    .byte $ff,$ff,$ff,$ff,$ff,$ae,$04,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff  // $2fad  
-    .byte $ff,$00,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff,$ff,$0c,$ff,$ff,$ff,$00  // $2fbd  
-    .byte $ff,$ff,$00,$00,$ff,$ff,$ff,$ff,$ff,$00,$ff,$ff,$ff,$ff,$ff,$00  // $2fcd  
-    .byte $ff,$8e,$ff,$ff,$ff,$ff,$ff,$ff,$00,$ff,$04,$00,$ff,$ff,$ff,$00  // $2fdd  
-    .byte $ff,$a6,$00,$9f,$ff,$0e,$00,$ff,$ff,$00,$ff,$00,$ff,$ff,$ff,$ff  // $2fed  
-    .byte $ff,$c1,$b2                           // $2ffd  
+// thrusty-levels: $2CAD-$2FFF is not used by the music (it held leftover
+// bytes). The title screen QR code lives here; the rest stays free.
+    #import "title_qr.asm"
+music_free:
+    .errorif * > $3000, "title_qr.asm is " + (* - $3000) + " bytes too big for $2CAD-$2FFF"
+    .fill $3000 - *, $ff

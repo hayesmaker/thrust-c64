@@ -7446,6 +7446,7 @@ status_charset_data:
 // Messages: <bitmap address>, ASCII text, $FF. Bitmap $6000, 40x25 cells.
 // ----------------------------------------------------------------------------
 write_title_screen_texts:
+    jsr plot_qr_code                            // title_qr.asm (in the music area)
     jsr write_press_spacebar
     lda #$07                                    // yellow, like "Game Over"
     sta font_byte_mask

@@ -261,7 +261,7 @@ run time (see `memory_map.md`):
 |--------|------|-------|
 | `$BEA4-$BFFF` (end of main block) | 348 B | Easiest: just let the tables grow in place. The `.assert` "main code must end below $C000" catches overflow. ~1-2 levels. |
 | `$1000-$1FFF` | 4096 B | Easy: in the load image as the cruncher filler `filler1` (`$0817-$1FFF`, all `$FA`), and free at run time. ~16-24 levels. |
-| `$2CAD-$2FFF` | 851 B | After the music data, in the load image. ~3-4 levels. |
+| `$2CAD-$2FFF` | 851 B | After the music data, in the load image. ~3-4 levels. (thrusty-levels uses `$2CAD-$2DB9` for its title screen QR code; 582 B left.) |
 | `$C000-$CFFF` | 4096 B | Free at run time but outside the load image. Needs a longer PRG plus a copy loop (or the relocator copying more). |
 | `$8100-$827F` | 384 B | Free at run time, outside the load image; needs a copy. |
 | `$4CC0-$52FF` | 1600 B | In the VIC bank; better kept for extra sprites. |

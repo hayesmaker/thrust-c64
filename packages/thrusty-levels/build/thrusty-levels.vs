@@ -75,7 +75,7 @@ al C:37 .diff_midpoint_xpos_FRAC_LO
 al C:b23b .Lb551
 al C:244f .music_voice_reg_offset
 al C:90da .L90da
-al C:6966 .gfx_load
+al C:6969 .gfx_load
 al C:a90b .Lac21
 al C:b211 .enter_new_high_score_name
 al C:72 .particle_screen_y
@@ -91,6 +91,7 @@ al C:a003 .particle_return_free_slot_in_Y_return
 al C:15 .velocity_vectory_FRAC
 al C:247f .music_pulse_lo
 al C:77 .terrain_draw_addr_HI
+al C:2ce4 .qr_colour
 al C:1061 .terrain_data_level_1_B
 al C:22c9 .L22c9
 al C:106e .terrain_data_level_1_C
@@ -138,6 +139,7 @@ al C:a629 .level_colour_status
 al C:246f .music_silenced_flag
 al C:2468 .music_temp_ctrl
 al C:8302 .L8302
+al C:2cad .plot_qr_code
 al C:b271 .Lb587
 al C:932e .add_fuel
 al C:84b8 .terrain_left_wall_2_counter
@@ -221,6 +223,7 @@ al C:a611 .terrain_right_wall_increment_ptrs_HI
 al C:a569 .level_1_reset_data
 al C:af61 .test_level_ended_else_tick_loop
 al C:a1 .irq1_timer1_signal
+al C:2dba .music_free
 al C:92ea .plot_BCD_loop
 al C:76 .terrain_draw_addr_LO
 al C:b0e8 .clear_screen_and_sprites
@@ -294,6 +297,7 @@ al C:a690 .ship_input_fire_return
 al C:a0ad .La3c3
 al C:8964 .irq_raster
 al C:d417 .SID_RES_FILT
+al C:2cb7 .qr_cell_row
 al C:b0b3 .set_landscape_colour_to_black
 al C:9dda .key_matrix
 al C:9c52 .sound_pulse_sweep_down
@@ -337,6 +341,7 @@ al C:a4 .total_levels_played
 al C:af3e .go_to_high_score
 al C:ffd2 .CHROUT
 al C:2d .bullet_index
+al C:2cb9 .qr_byte
 al C:6183 .main2_load
 al C:a6 .gravity_INT
 al C:925f .level_5_door_draw_bottom
@@ -378,6 +383,7 @@ al C:8933 .sprite_list_offset
 al C:9a5c .L9a5c
 al C:6a0 .particles_dx_FRAC
 al C:61 .level_tick_state
+al C:6780 .qr_bitmap
 al C:1294 .level_4_obj_pos_X
 al C:84ea .obj_colour_fuel
 al C:247c .music_instrument_fx
@@ -472,6 +478,7 @@ al C:a8cb .Labe1
 al C:a936 .plot_line_pixels
 al C:869c .bullet_test_next_jmp
 al C:a80e .line_rows_left
+al C:2d18 .qr_put_line_pair
 al C:ac75 .planet_destroyed_hostile_gun_modifier
 al C:9078 .L9078
 al C:a926 .plot_line_bresenham_1
@@ -694,7 +701,7 @@ al C:b119 .Lb42f
 al C:86 .teleport_ring_count
 al C:8b8f .sprite_list_shift
 al C:8673 .handle_generator
-al C:6935 .relocator_load
+al C:6938 .relocator_load
 al C:972f .L972f
 al C:94dc .write_no_bonus
 al C:a9e3 .jump_fn_1_addr_HI
@@ -770,7 +777,7 @@ al C:122f .level_2_obj_pos_Y_EXT
 al C:9f0f .create_explosion_loop
 al C:a4d2 .set_status_bar_chars
 al C:8d .explosion_particle_type
-al C:bb9f .msg_title
+al C:bba2 .msg_title
 al C:84c2 .terrain_left_wall_increment_LO
 al C:9e09 .ship_input_rotate
 al C:98b1 .plot_ship_return
@@ -847,7 +854,7 @@ al C:866c .handle_door_switch
 al C:831d .landscape_draw_part_2
 al C:80 .clear_screen_ptr
 al C:84b4 .terrain_left_wall_1_xpos
-al C:6953 .relocate
+al C:6956 .relocate
 al C:84b9 .terrain_left_wall_2_index
 al C:9f7 .terrain_draw_table_1
 al C:12cd .level_4_obj_type
@@ -962,6 +969,7 @@ al C:d012 .VIC_RASTER
 al C:200b .music_play_frame
 al C:84bd .terrain_right_wall_2_xpos
 al C:8c68 .sprite_bands_count_ok
+al C:2d29 .qr_save_x
 al C:abeb .player_teleport
 al C:91d0 .level_3_door_draw_loop
 al C:a1d3 .La4e9
@@ -976,7 +984,7 @@ al C:8afd .irq_sprite_x_msb_clear
 al C:2458 .music_note_length_left
 al C:a928 .plot_line_bresenham_1_addr_HI
 al C:9e77 .calculate_player_position_from_midpoint
-al C:6935 .entry
+al C:6938 .entry
 al C:52 .pod_window_xpos_INT
 al C:8e06 .read_key_next_bit
 al C:8f4e .plot_char_A
@@ -1002,7 +1010,7 @@ al C:95dd .no_thrust
 al C:21fd .L21fd
 al C:2485 .music_instruments
 al C:ab53 .draw_fuel_beam
-al C:7666 .filler2_load
+al C:7669 .filler2_load
 al C:79 .screen_addr_hi_temp
 al C:d415 .SID_FC_LO
 al C:8868 .object_sprite_coords
@@ -1154,6 +1162,7 @@ al C:73 .new_ship_ypos_FRAC
 al C:a809 .line_step_fn_HI
 al C:2 .planet_explode_anim
 al C:b6 .text_ptr_HI
+al C:2d3a .qr_data
 al C:16 .velocity_vectory_INT
 al C:84d7 .terrain_subtract_xpos_fn
 al C:92d7 .write_score
@@ -1196,7 +1205,7 @@ al C:780 .particles_pixels_byte
 al C:8ff0 .L8ff0
 al C:75 .new_ship_ypos_INT_HI
 al C:d406 .SID_V1_SR
-al C:bbb5 .main_end
+al C:bbb8 .main_end
 al C:9ab0 .pod_spr_y
 al C:9ab1 .pod_spr_x
 al C:b0cb .Lb3e1
@@ -1336,6 +1345,7 @@ al C:98b2 .calculate_attached_pod_vector
 al C:77 .calc_ship_window_xpos_INT
 al C:9799 .plot_ship_and_pod
 al C:a390 .level_reset_with_pod_flag
+al C:2d2a .qr_expand
 al C:84ba .terrain_right_wall_1_xpos
 al C:22 .pod_attached_flag_1
 al C:a660 .level_obj_pos_Y_EXT_lookup
@@ -1460,7 +1470,7 @@ al C:a950 .line_step_right
 al C:2a50 .music_pattern_01
 al C:8a0e .irq_no_planet_flash
 al C:9b4b .sfx_unused
-al C:6955 .relocate_loop
+al C:6958 .relocate_loop
 al C:2a8c .music_pattern_04
 al C:90b4 .L90b4
 al C:2a6e .music_pattern_03

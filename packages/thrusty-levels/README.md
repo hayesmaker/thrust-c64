@@ -30,7 +30,7 @@ data is reached through the pointer tables, so nothing else changed.
 | Data | Where | Room |
 |------|-------|------|
 | `levels.asm` (terrain, objects) | `$1000-$1FFF` (`LEVELS_AREA_START/END`) | 4096 bytes (842 used) |
-| `level_tables.asm` (restart points, pointers, colours, gravity) | main block, must end below `$C000` | 1099 bytes free |
+| `level_tables.asm` (restart points, pointers, colours, gravity) | main block, must end below `$C000` | 1096 bytes free |
 
 Both limits are `.errorif` checks in `thrust.asm`, so an overflow stops the
 build with a message such as `levels.asm is 46 bytes too big for the levels
@@ -43,10 +43,20 @@ tight.
 The high score screen (shown while the title music plays) has a title line,
 "SUPER THRUSTY MAKER", on text row 16 under the table, in the game's own font;
 "Press SPACE BAR to start." moved down from row 16 to row 18. The title
-screen code calls `write_title_screen_texts` (end of the main block, 39 bytes)
+screen code calls `write_title_screen_texts` (end of the main block, 42 bytes)
 instead of `write_press_spacebar`; change the text in `msg_title` in
 `thrust.asm`. Message positions are bitmap addresses: `text_pos(row, col)` =
 `$6000 + row * 320 + col * 8`.
+
+Left of the table (rows 6-13, columns 0-7) is a QR code linking to the GitHub
+repo (`HTTPS://GITHUB.COM/HAYESMAKER/THRUST-C64`; upper case fits a smaller
+code). It is drawn by `plot_qr_code` in `src/title_qr.asm`, which sits in the
+unused tail of the music area (`$2CAD-$2DB9`, 269 bytes; runs in place), so
+it takes nothing from the level areas. The title screen is a hires bitmap: a
+QR module is 2 pixels x 2 lines, white on black. To change the link:
+`python3 packages/thrusty-levels/tools/qr2asm.py URL` (needs the Python
+`qrcode` package) regenerates `src/title_qr_data.asm`; URLs up to 47
+characters in upper case (or 32 in mixed case) fit.
 
 ## examples/
 
