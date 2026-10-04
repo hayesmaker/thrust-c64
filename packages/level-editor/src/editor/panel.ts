@@ -49,6 +49,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         <button id="p-undo" title="Ctrl+Z">Undo</button>
         <button id="p-redo" title="Ctrl+Shift+Z">Redo</button>
         <button id="p-fit" title="F">Fit</button>
+        <button id="p-guide" title="? : open the user guide">Guide</button>
       </div>
     </header>
     <section>
@@ -152,6 +153,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         <dt>drag / wheel</dt><dd>pan</dd>
         <dt>Ctrl+wheel, +/-</dt><dd>zoom</dd>
         <dt>F, 1-6</dt><dd>fit, pick level</dd>
+        <dt>?</dt><dd>user guide</dd>
       </dl>
     </details>
     <div id="toast"></div>

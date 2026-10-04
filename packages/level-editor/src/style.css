@@ -13,7 +13,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   font: 13px/1.4 system-ui, sans-serif; }
-#app { display: grid; grid-template-columns: 1fr 360px; height: 100vh; }
+#app { position: relative; display: grid; grid-template-columns: 1fr 360px; height: 100vh; }
 #stage { position: relative; min-width: 0; }
 #view { position: absolute; inset: 0 0 24px 0; width: 100%; height: calc(100% - 24px); display: block;
   touch-action: none; }
@@ -136,3 +136,25 @@ input[type=text] { width: 100%; background: var(--bg); color: var(--text); borde
 .mem-banner { margin: 0 0 8px; padding: 7px 9px; border-radius: 5px; font-size: 12.5px; font-weight: 600; }
 .mem-banner.tight { background: #3a3110; border: 1px solid var(--edited); color: var(--edited); }
 .mem-banner.over { background: #3d1714; border: 1px solid var(--warn); color: #ffb3aa; }
+
+/* user guide overlay */
+#guide { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; z-index: 10; }
+#guide[hidden] { display: none; }
+.guide-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--panel);
+  border-bottom: 1px solid var(--line); }
+.guide-bar .spacer { flex: 1; }
+.guide-body { flex: 1; overflow-y: auto; padding: 8px max(16px, calc(50% - 400px)) 48px; line-height: 1.55;
+  font-size: 14px; outline: none; }
+.guide-body h1 { font-size: 24px; margin: 16px 0 8px; }
+.guide-body h2 { font-size: 18px; margin: 32px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.guide-body h3 { font-size: 15px; margin: 20px 0 6px; }
+.guide-body img { max-width: 100%; border: 1px solid var(--line); border-radius: 4px; }
+.guide-body table { border-collapse: collapse; margin: 8px 0; }
+.guide-body th, .guide-body td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.guide-body th { background: var(--panel-2); }
+.guide-body code { font: 12px ui-monospace, monospace; background: var(--panel-2); padding: 1px 4px; border-radius: 3px; }
+.guide-body pre { background: var(--panel-2); padding: 8px 12px; border-radius: 4px; overflow-x: auto; }
+.guide-body pre code { background: none; padding: 0; }
+.guide-body blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--accent); color: var(--muted); }
+.guide-body a { color: #a99cf0; }
+.guide-body hr { border: none; border-top: 1px solid var(--line); }

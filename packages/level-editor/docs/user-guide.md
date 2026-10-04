@@ -70,7 +70,7 @@ rock in the level's colour, the cave in black. On top of it:
 | blue line and squares | the **left wall** and its points |
 | orange line and squares | the **right wall** and its points |
 | grey dot at the top | the fixed start of a wall (cannot be moved) |
-| dashed line below the last point | the wall carries on straight down from there |
+| dashed line below the last point | the wall carries on straight down from there (see [the last points](#5-editing-the-cave-walls)) |
 | dashed wall segment | an uneven slope (costs extra memory, see [5](#5-editing-the-cave-walls)) |
 | game sprites with numbers | objects: red guns, yellow fuel, violet pod stand with its pod, orange reactor, pink door switches |
 | white crosses `start`, `R1`, `R2`... | restart points |
@@ -95,6 +95,9 @@ position under the mouse.
 * **Gravity and colours**, **Terrain tables** (the raw numbers): click the
   heading to open them.
 * **Assembler files**, **View**, **Controls**.
+
+**This guide** is built into the editor: click **Guide** at the top of the
+panel or press `?`. Esc closes it.
 
 ## 3. Moving around
 
@@ -161,6 +164,17 @@ level's tables. The panel tells you the cost, e.g. "steep: 60 rows, X +5 ...
 → 10 table entries". To avoid it, hold **Shift** while dragging, or move the
 point so the segment becomes vertical or an even slope. The original levels use
 almost only vertical walls, 1-per-row slopes and ledges.
+
+**The last points: close the cave.** A wall's data ends at its last point;
+below it the game keeps the wall at the same X forever, which the editor draws
+as a dashed line going down. So the bottom of the cave is wherever the two
+walls meet: end both walls at the same X (or let the left wall cross to the
+right of the right wall), and everything below is solid rock. All six original
+levels end both walls at the same X, so their two dashed lines lie on top of
+each other at the bottom of the cave. If they end
+apart, the cave is an endless open shaft downwards, and Checks warns "the cave
+is open at the bottom". To make the cave deeper, click on a dashed line to add
+a point there and drag it down.
 
 **Doors (levels 3, 4, 5).** These levels have a door that opens when you shoot
 a door switch. The door is part of the game's program, not of the level data:
@@ -401,6 +415,7 @@ They then become the template for new games.
 | Ctrl + Enter | build and play |
 | Ctrl + S, Ctrl + Shift + S | save, save as |
 | Ctrl + O | open a game |
+| `?` | open this guide (Esc closes it) |
 
 ## 14. Troubleshooting
 

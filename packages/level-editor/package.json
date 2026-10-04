@@ -21,6 +21,7 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "c64-ready": "^2.5.0"
+    "c64-ready": "^2.5.0",
+    "marked": "^18.0.14"
   }
 }

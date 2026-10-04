@@ -1,5 +1,6 @@
 import './style.css';
 import { confirmDiscard, openGameFile } from './editor/files';
+import { GuideOverlay } from './editor/guide';
 import { attachInput } from './editor/input';
 import { loadModSource, mountPanel, openAsmFiles, refreshFromServer, toast } from './editor/panel';
 import { PlayerOverlay } from './editor/player';
@@ -8,15 +9,26 @@ import { View } from './editor/view';
 
 const store = new Store();
 const view = new View(document.getElementById('view') as HTMLCanvasElement, store);
+const guide = new GuideOverlay(document.getElementById('app')!); // first: its key blocker runs before the others
 const player = new PlayerOverlay(document.getElementById('stage')!);
 const updatePanel = mountPanel(document.getElementById('panel')!, store, view, player);
 attachInput(view, store);
-// the game reads the keyboard: pause editor shortcuts while it is shown
+// the game and the guide take the keyboard: pause editor shortcuts while one is shown
+const pauseInput = () => (store.inputPaused = player.isOpen || guide.isOpen);
 player.onOpen = () => (store.inputPaused = true);
 player.onClose = () => {
-  store.inputPaused = false;
+  pauseInput();
   view.canvas.focus();
 };
+guide.onOpen = () => (store.inputPaused = true);
+guide.onClose = pauseInput;
+document.getElementById('p-guide')!.onclick = () => guide.open();
+window.addEventListener('keydown', (e) => {
+  const t = e.target as HTMLElement;
+  if (e.key !== '?' || store.inputPaused || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
+  e.preventDefault();
+  guide.open();
+});
 
 const empty = document.getElementById('empty')!;
 store.onChange(() => {
@@ -62,4 +74,4 @@ async function start() {
 start();
 
 // dev builds: handle for debugging and browser tests
-if (import.meta.env.DEV) Object.assign(window, { editor: { store, view, player } });
+if (import.meta.env.DEV) Object.assign(window, { editor: { store, view, player, guide } });
