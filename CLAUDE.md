@@ -14,3 +14,6 @@
   `tools/coverage.py`) plus static tracing; `ENTRY_POINTS` adds unreached code.
 * Level maps: `python3 tools/levelview.py` after building.
 * Docs: README.md, docs/level_format.md, docs/memory_map.md.
+* `packages/thrusty-levels/src/*.asm` is the user's HAND-EDITED mod source ("thrusty-levels",
+  built by `packages/thrusty-levels/build.sh` into `packages/thrusty-levels/build/thrusty-levels.prg`).
+  Never overwrite it from `src/` without asking.

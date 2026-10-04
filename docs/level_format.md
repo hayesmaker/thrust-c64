@@ -61,6 +61,29 @@ B:  $00,$00,$00, $55,$01, ...   ; then $AB rows down to the surface,
 So a single row with a big step makes a horizontal ledge, longer runs with
 small steps make slopes, step 0 makes a vertical wall. The last run should be
 `$FF` (the decoder keeps reading past the end of the table otherwise).
+Because a count of `$FF` (from entry 2 on) ends the wall, a single run can be
+at most 254 rows; longer stretches need two entries (a count of 0 means 256
+rows). Entry 1's count is never read: the sky run is always 255 rows.
+
+### Slope angles
+
+The original levels only use steps of 0 and ±1 in runs longer than one row,
+but any step works (tested in game with a test level: drawing and collision
+are correct for all of these):
+
+| Run | On screen (1 X unit = 4 px, 1 row = 2 px) |
+|-----|------------------------------------------|
+| n rows of 0 | vertical wall |
+| n rows of ±1 | the standard Thrust slope, about 27° from horizontal |
+| n rows of ±2, ±3, ... | shallower slopes (about 14°, 9.5°, ...) |
+| 1 row of ±n | horizontal ledge n units wide |
+| alternating 1 row ±1, k rows 0 | steeper than standard (k = 1, 2, ...) |
+
+Steps are whole units per row, so the only way to get a slope steeper than
+±1 (other than vertical) is a staircase of alternating runs. In game it still
+looks like a slope rather than steps. Each stair costs two entries in each
+table of the pair, and a table can have at most about 255 entries (the index
+is one byte).
 
 Level 0, left wall: `$FF,$FF,$AB,$01,$0F,$01,$0C,$01,$FF` / `$00,$00,$00,$55,$01,$15,$01,$19,$00`
 
@@ -238,7 +261,7 @@ run time (see `memory_map.md`):
 |--------|------|-------|
 | `$BEA4-$BFFF` (end of main block) | 348 B | Easiest: just let the tables grow in place. The `.assert` "main code must end below $C000" catches overflow. ~1-2 levels. |
 | `$1000-$1FFF` | 4096 B | Easy: in the load image as the cruncher filler `filler1` (`$0817-$1FFF`, all `$FA`), and free at run time. ~16-24 levels. |
-| `$2CAD-$2FFF` | 851 B | After the music data, in the load image. ~3-4 levels. |
+| `$2CAD-$2FFF` | 851 B | After the music data, in the load image. ~3-4 levels. (thrusty-levels uses `$2CAD-$2DB9` for its title screen QR code; 582 B left.) |
 | `$C000-$CFFF` | 4096 B | Free at run time but outside the load image. Needs a longer PRG plus a copy loop (or the relocator copying more). |
 | `$8100-$827F` | 384 B | Free at run time, outside the load image; needs a copy. |
 | `$4CC0-$52FF` | 1600 B | In the VIC bank; better kept for extra sprites. |
@@ -270,6 +293,15 @@ terrain_data_level_6_A:
 
 KickAssembler reports an error if the block gets too big (it would overlap
 the music at `$2000`).
+
+### thrusty-levels does this
+
+`packages/thrusty-levels` keeps `levels.asm` at `$1000-$1FFF` (see its
+README): 4 KB for terrain and objects, and the 790 bytes they used free up in
+the main block for restart tables. Its layout checks use `.errorif`: a failed
+`.assert` in KickAssembler only prints `ERROR IN ASSERTION` and still writes
+the PRG (exit code 0), so in this source (`src/thrust.asm`) the
+"main code must end below $C000" check does not stop `./build.sh`.
 
 ### Other limits
 

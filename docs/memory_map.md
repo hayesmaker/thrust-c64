@@ -21,7 +21,7 @@ After `init` has run. Determined from the code and from emulator access logs
 | `$0B00-$0BEF` | terrain column → bitmap offset / pixel tables |
 | `$0C00-$0FFF` | sprite multiplexer lists and raster interrupt table (`$0E00`) |
 | `$1000-$1FFF` | **free** |
-| `$2000-$2CAC` | music driver and data (`$2CAD-$2FFF` unused) |
+| `$2000-$2CAC` | music driver and data (`$2CAD-$2FFF` unused; thrusty-levels puts its title screen QR code at `$2CAD-$2DB9`) |
 | `$3000-$3002` | `JMP music_driver` |
 | `$3003-$3FFF` | **free** at run time (only the start-up copy reads it; in the PRG it holds the main block, so it cannot hold extra data) |
 | `$4000-$4CBF` | sprites (pointers `$00-$32`) |

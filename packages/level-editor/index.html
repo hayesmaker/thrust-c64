@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thrust Level Editor</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Cpath d=%22M8 1L14 14H2Z%22 fill=%22%237869c4%22/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main id="app">
+      <div id="stage">
+        <canvas id="view"></canvas>
+        <div id="empty" hidden>
+          <p>No level source loaded.</p>
+          <p>Run the dev server (<code>npm run dev</code>) to load
+            <code>packages/thrusty-levels/src</code> automatically, or open
+            <code>levels.asm</code> and <code>level_tables.asm</code> from the panel
+            (or drop them here).</p>
+        </div>
+        <div id="status"></div>
+      </div>
+      <aside id="panel"></aside>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
