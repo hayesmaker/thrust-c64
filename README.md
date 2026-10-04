@@ -95,6 +95,6 @@ overwrite your edits) — from then on the `.asm` files are the master copy.
 ## Credits
 
 * BBC Micro disassembly by Kieran HJ Connell (with later documentation), used
-  for names and comments of the shared game logic: `../thrust-disassembly`.
+  for names and comments of the shared game logic: [../thrust-disassembly](https://github.com/kieranhj/thrust-disassembly)
 * Music driver names follow Anthony McSweeney's commented disassembly of Rob
   Hubbard's "Monty on the Run" driver.
