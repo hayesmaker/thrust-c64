@@ -1,6 +1,8 @@
 # thrusty-levels - modded Thrust levels
 
-Development folder for new and modified levels. `src/*.asm` here started as
+Development folder for new and modified levels. The easiest way to edit them
+is the web level editor: see the
+[user guide](../level-editor/docs/user-guide.md). `src/*.asm` here started as
 a copy of the generated `../../src/*.asm` (snapshot of 2026-10-04) and is edited
 by hand; `tools/regen.sh` never touches it.
 

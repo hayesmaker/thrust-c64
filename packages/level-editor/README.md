@@ -1,6 +1,9 @@
 # Thrust level editor
 
-Web level editor for Thrust (C64), work in progress. Plan and status:
+Web level editor for Thrust (C64).
+
+**Using the editor: see the [user guide](docs/user-guide.md).** This README is
+for working on the editor itself. Plan and status:
 [`docs/level_editor_plan.md`](../../docs/level_editor_plan.md).
 
 ```
