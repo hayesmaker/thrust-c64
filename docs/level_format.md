@@ -62,6 +62,26 @@ So a single row with a big step makes a horizontal ledge, longer runs with
 small steps make slopes, step 0 makes a vertical wall. The last run should be
 `$FF` (the decoder keeps reading past the end of the table otherwise).
 
+### Slope angles
+
+The original levels only use steps of 0 and ±1 in runs longer than one row,
+but any step works (tested in game with a test level: drawing and collision
+are correct for all of these):
+
+| Run | On screen (1 X unit = 4 px, 1 row = 2 px) |
+|-----|------------------------------------------|
+| n rows of 0 | vertical wall |
+| n rows of ±1 | the standard Thrust slope, about 27° from horizontal |
+| n rows of ±2, ±3, ... | shallower slopes (about 14°, 9.5°, ...) |
+| 1 row of ±n | horizontal ledge n units wide |
+| alternating 1 row ±1, k rows 0 | steeper than standard (k = 1, 2, ...) |
+
+Steps are whole units per row, so the only way to get a slope steeper than
+±1 (other than vertical) is a staircase of alternating runs. In game it still
+looks like a slope rather than steps. Each stair costs two entries in each
+table of the pair, and a table can have at most about 255 entries (the index
+is one byte).
+
 Level 0, left wall: `$FF,$FF,$AB,$01,$0F,$01,$0C,$01,$FF` / `$00,$00,$00,$55,$01,$15,$01,$19,$00`
 
 * rows 0-425: X stays 0 (sky)
