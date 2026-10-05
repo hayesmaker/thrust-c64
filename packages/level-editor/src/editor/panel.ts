@@ -21,6 +21,7 @@ import { type BuildError, type BuildResult, type Source, build, buildFileUrl, fe
 import { download, terrainAsm } from './export';
 import { confirmDiscard, forgetFile, openGameFile, pickGameFile, saveGame } from './files';
 import { swatchColour } from './look';
+import { DOOR_HTML, RULES_HTML, mountDoorRules } from './door-panel';
 import { deleteSelection } from './input';
 import { addObject, addRestart, centreWindow, movePoint, reorderObject, sortObjects } from './ops';
 import { type PlayerOverlay } from './player';
@@ -112,12 +113,14 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       <ol class="list" id="p-restarts" start="0"></ol>
       <div class="row"><button id="p-add-restart">Add restart point</button></div>
     </details>
+    ${DOOR_HTML}
     <details>
       <summary>Gravity and colours</summary>
       <label class="inline">gravity <input type="number" id="p-gravity" min="0" max="255"> <span class="muted" id="p-gravity-hex"></span></label>
       <div class="muted small">Original levels: 5, 7, 9, 11, 12, 13 (bigger = stronger).</div>
       <div id="p-colours"></div>
     </details>
+    ${RULES_HTML}
     <details>
       <summary>Terrain tables</summary>
       <div id="p-tables"></div>
@@ -151,6 +154,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         <dt>click a wall line</dt><dd>add a point</dd>
         <dt>drag object</dt><dd>move, snaps to terrain (Alt: free)</dd>
         <dt>drag restart cross</dt><dd>move ship start + window</dd>
+        <dt>drag door tab / row dot</dt><dd>move door / one row (Shift: all rows)</dd>
         <dt>right-click / Del</dt><dd>delete</dd>
         <dt>arrows</dt><dd>nudge (Shift: ×8)</dd>
         <dt>drag / wheel</dt><dd>pan</dd>
@@ -171,6 +175,8 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     else if (terrain) store.terrainChanged();
     else store.changed();
   };
+
+  const updateDoorRules = mountDoorRules(root, store, view, edit);
 
   // ---- header + level
   const levelBox = $('p-levels');
@@ -247,7 +253,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     if (!li) return;
     const kind = li.dataset.kind;
     const i = Number(li.dataset.i);
-    if (kind === 'object' || kind === 'restart') {
+    if (kind === 'object' || kind === 'restart' || kind === 'door') {
       store.selection = { kind, index: i };
       store.changed(false);
     }
@@ -467,7 +473,9 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         ? !!l[sel.side].points[sel.index]
         : sel.kind === 'object'
           ? !!l.objects[sel.index]
-          : !!l.restarts[sel.index]);
+          : sel.kind === 'door'
+            ? !!l.door && sel.index < l.door.rows.length
+            : !!l.restarts[sel.index]);
     if (!sel || !l || !valid) {
       selKey = '';
       $('p-sel-title').textContent = 'Selection';
@@ -506,6 +514,35 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       setVal('s-x', p.x & 0xff);
       const prev = w.points[sel.index - 1];
       $('s-info').innerHTML = `row ${hex3(p.row)}, X ${hex2(p.x)}<br>` + describeSegment(prev.row, prev.x, p.row, p.x);
+      return;
+    }
+
+    if (sel.kind === 'door') {
+      const d = l.door!;
+      if (key !== selKey) {
+        selKey = key;
+        $('p-sel-title').textContent = sel.index < 0 ? 'Door' : `Door row ${sel.index}`;
+        selBox.innerHTML =
+          sel.index < 0
+            ? `<div class="muted">Drag the tab to move the door (Shift: sideways only); arrows nudge it. Edit it under Door below.</div>
+               <div class="row"><button id="s-ddel">Delete door</button></div>`
+            : `<label>closed X <input type="number" id="s-dx" min="0" max="255"></label>
+               <div class="muted" id="s-dinfo"></div>
+               <div class="row"><button id="s-ddel">Delete row</button></div>`;
+        $('s-ddel').onclick = () => deleteSelection(store);
+        if (sel.index >= 0)
+          num('s-dx').onchange = () =>
+            edit((l2) => {
+              if (!l2.door) return false;
+              const x = Math.max(0, Math.min(255, Number(num('s-dx').value) | 0));
+              if (l2.door.rows[sel.index] === x) return false;
+              l2.door.rows[sel.index] = x;
+            });
+      }
+      if (sel.index >= 0) {
+        setVal('s-dx', d.rows[sel.index]);
+        $('s-dinfo').textContent = `row ${hex3(d.top + sel.index)}, closed X ${hex2(d.rows[sel.index])}`;
+      }
       return;
     }
 
@@ -669,14 +706,16 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   }
 
   function renderChecks(l: Level) {
-    const issues = [...memoryIssues(memoryAreas(store.project!.levels, store.layout), l.index), ...validateLevel(l)];
+    const p = store.project!;
+    const issues = [...memoryIssues(memoryAreas(p.levels, store.layout, p.roundCycle.length), l.index), ...validateLevel(l)];
     const bad = issues.filter((i) => i.severity !== 'info').length;
     $('p-check-count').innerHTML = bad ? `<span class="warn">(${bad})</span>` : '<span class="ok">✓</span>';
     $('p-checks').innerHTML =
       issues
         .map((i) => {
           const t = i.target;
-          const data = t && t.kind !== 'wall' ? `data-kind="${t.kind}" data-i="${t.index}"` : '';
+          const data =
+            t?.kind === 'door' ? 'data-kind="door" data-i="-1"' : t && t.kind !== 'wall' ? `data-kind="${t.kind}" data-i="${t.index}"` : '';
           return `<li class="${i.severity}" ${data}>${esc(i.message)}</li>`;
         })
         .join('') || '<li class="ok">No problems found.</li>';
@@ -684,7 +723,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
 
   let lastMemState: MemState = 'ok';
   function renderMemory(l: Level) {
-    const areas = memoryAreas(store.project!.levels, store.layout);
+    const areas = memoryAreas(store.project!.levels, store.layout, store.project!.roundCycle.length);
     const b = levelBytes(l);
     $('p-memory').innerHTML =
       areas
@@ -752,6 +791,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     $('p-gravity-hex').textContent = hex2(l.gravity);
     for (const b of colourBox.querySelectorAll<HTMLElement>('button[data-key]'))
       b.classList.toggle('active', l.colours[b.dataset.key as (typeof COLOUR_KEYS)[number]] === Number(b.dataset.c));
+    updateDoorRules(l);
     renderMemory(l);
     renderChecks(l);
     renderLists(l);

@@ -23,12 +23,13 @@ Building turns a game into a normal C64 program (`.prg`).
 6. [Objects: guns, fuel, pod, reactor](#6-objects-guns-fuel-pod-reactor)
 7. [Restart points](#7-restart-points)
 8. [Gravity and colours](#8-gravity-and-colours)
-9. [Checks](#9-checks)
-10. [Memory](#10-memory)
-11. [Building and playing](#11-building-and-playing)
-12. [Saving your work](#12-saving-your-work)
-13. [Keyboard and mouse reference](#13-keyboard-and-mouse-reference)
-14. [Troubleshooting](#14-troubleshooting)
+9. [Doors and rules](#9-doors-and-rules)
+10. [Checks](#10-checks)
+11. [Memory](#11-memory)
+12. [Building and playing](#12-building-and-playing)
+13. [Saving your work](#13-saving-your-work)
+14. [Keyboard and mouse reference](#14-keyboard-and-mouse-reference)
+15. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -52,7 +53,7 @@ npm run dev
 Open the address it prints (normally <http://localhost:5173>). The editor
 starts a new game from the template straight away: the six levels of the mod,
 ready to change. To carry on with a game you saved, click **Open…** (see
-[Saving your work](#12-saving-your-work)).
+[Saving your work](#13-saving-your-work)).
 
 Prefer a fixed address? `npm run serve` builds the editor and serves it at
 <http://127.0.0.1:5180>.
@@ -76,7 +77,7 @@ rock in the level's colour, the cave in black. On top of it:
 | white crosses `start`, `R1`, `R2`... | restart points |
 | dashed boxes | roughly what the screen shows when the ship restarts there |
 | red dashed vertical line | the edge of the world: X wraps around from `$FF` to `$00` |
-| orange stripes (levels 3-5) | the level's door |
+| orange stripes with a "door" tab | the level's door: solid = at the preview opening, faint = closed |
 
 Rulers show the position: **X** across the top (0-255, in hex), the **row**
 down the left (hex above, decimal below). The bar at the bottom shows the
@@ -176,10 +177,10 @@ apart, the cave is an endless open shaft downwards, and Checks warns "the cave
 is open at the bottom". To make the cave deeper, click on a dashed line to add
 a point there and drag it down.
 
-**Doors (levels 3, 4, 5).** These levels have a door that opens when you shoot
-a door switch. The door is part of the game's program, not of the level data:
-it always appears at the same place (shown in orange stripes). Keep the left
-wall where it is around the door, or the door will not fit the cave any more.
+**Doors.** Levels 3, 4 and 5 start with a door that opens when you shoot a
+door switch (shown in orange). A door's shape is set per row, separately from
+the wall, so if you move the wall around a door, retrace the door (see
+[Doors and rules](#9-doors-and-rules)).
 
 ## 6. Objects: guns, fuel, pod, reactor
 
@@ -192,7 +193,7 @@ wall where it is around the door, or the door will not fit the cave any more.
 | fuel | collect with the tractor beam |
 | pod stand | where the pod sits; carry it out of the planet to finish the level |
 | generator | the reactor: shooting it silences the guns for a while; hit it too often and the planet starts a countdown to explode |
-| door switch R / L | opens the door (levels 3-5 only); sits against a wall |
+| door switch R / L | opens the level's door; sits against a wall |
 
 Objects are drawn with the game's own sprites, at the place the game draws
 them, so what rests on the floor in the editor rests on it in the game. Each
@@ -267,7 +268,81 @@ Open **Gravity and colours** in the panel.
   bitmap colours, the status bar labels, the guns / pod stand / reactor, and
   the shield. The map redraws in the new colours.
 
-## 9. Checks
+## 9. Doors and rules
+
+![A door on the right wall of level 0, with the Door and Rules sections open](img/doors.png)
+
+### Doors
+
+Each level can have one door, on the left or the right wall. Shooting any door
+switch (object 7 or 8) on the level opens it; after a while it closes again.
+The **Door** section of the panel shows the current level's door:
+
+* **Add door, left wall / right wall**: a 12-row door at the middle of the
+  view, sticking out of the wall by **depth** X units.
+* **wall**: which wall the door is part of.
+* **mode**:
+  * **slide**: the whole door edge moves back into the wall by up to **max
+    opening** X units, one per tick (levels 3 and 5 of the original).
+  * **reveal**: the rows open one at a time from the top, to **open X**, up to
+    **rows that open** rows (level 4 of the original).
+* **top row**, **rows**: where the door starts and how tall it is.
+* **open time**: how long the switch keeps the door open, in ticks (255 in the
+  original game). The text below says how long it stays fully open.
+* **preview**: drag to see the door part open in the map. It only changes the
+  view, not the game.
+* **Trace from wall**: makes every row stick out of the wall by **depth** X
+  units again, for example after you moved the wall.
+* **Fill passage**: makes every row reach the opposite wall, so the closed
+  door blocks the passage completely. A slide door's **max opening** is set so
+  it opens all the way back to its own wall.
+* **closed X per row**: the door's edge, one value per row (hex with `$`, or
+  decimal). Use this for shapes like the diamond on level 5.
+
+**How to read the map.** In the game, each door row replaces the wall at that
+row. The map draws the door the way the game will show it at the **preview**
+opening:
+
+* **solid orange**: door rock sticking out into the cave;
+* **faint orange**: where the closed door is;
+* **black with orange hatching**: rock the door cuts away. A slide door opens
+  every row by the same amount, so where the wall slopes, some rows go back
+  past the terrain and leave a notch in the rock. Make the closed edge follow
+  the wall's shape, or lower the max opening, to avoid it.
+
+To make a door wider, use **Fill passage**, **Trace from wall** with a bigger
+depth, or Shift-drag a row dot. Then check the **max opening**: a slide door
+only opens by that much.
+
+In the map, drag the door's **tab** to move the door (Shift: sideways only).
+When the door is selected, or when you zoom in, each row has a dot on its
+edge: drag a dot to move that row (Shift: all rows). Arrows nudge the
+selection; Delete removes the selected row, or the door if the tab is
+selected.
+
+Checks warns when a door has no switch, when it still blocks the passage when
+fully open, or when a slide door would open past the edge of the world.
+
+### Rules
+
+A **round** is one pass through all six levels. In the original game the
+second round has reverse gravity, the third has invisible landscape, the
+fourth has both, and then it starts again. The **Rules** section lets you
+change this:
+
+* **Round cycle** (the whole game): one line per round, with **reverse** and
+  **invisible** ticked as needed. **Add round** adds one (up to 8), ✕ removes
+  one, and **Original cycle** puts back the original four.
+* **reverse gravity** / **invisible landscape** (this level only): **follow
+  the round**, **always on**, **always off**, or **opposite of the round**.
+  For example, set reverse gravity to always on for a level that is meant to
+  be flown upside down.
+
+The line under the two choices shows what the level will be like in each
+round. The game shows its "reverse gravity" and "invisible landscape" messages
+the first time each one comes on.
+
+## 10. Checks
 
 The **Checks** section lists problems in the current level:
 
@@ -275,13 +350,13 @@ The **Checks** section lists problems in the current level:
   too many objects, out of memory). Fix these.
 * **! warnings**: probably a mistake (no reactor, restart point inside rock,
   cave open at the bottom, memory getting tight).
-* **i notes**: worth knowing (an object floating above the ground, the
-  level's door).
+* **i notes**: worth knowing (an object floating above the ground, door
+  switches on a level without a door).
 
 Click a message about an object or restart point to select it. A ✓ next to
 the heading means no errors or warnings.
 
-## 10. Memory
+## 11. Memory
 
 The C64 has little room for level data, and the meters under **Level** show how
 much is used:
@@ -309,7 +384,7 @@ What costs memory:
 The six original levels together use about 900 bytes, so there is plenty of
 room. The quickest savings are dashed slopes: make them even with Shift-drag.
 
-## 11. Building and playing
+## 12. Building and playing
 
 ![Playing level 3 in the built-in emulator](img/play.png)
 
@@ -348,7 +423,7 @@ After a build you can also **Download PRG** (to run in VICE or on a real C64)
 or **Open in c64-ready** (the c64-ready emulator site; its address can be
 changed under **View**).
 
-## 12. Saving your work
+## 13. Saving your work
 
 **A game is a file.** Each game you make is one `.json` file holding all six
 levels. Keep them wherever you like, copy them, share them, put them in
@@ -396,11 +471,12 @@ To make the game part of the mod itself, put the two downloaded files into
 `packages/thrusty-levels/src` and run `./packages/thrusty-levels/build.sh`.
 They then become the template for new games.
 
-## 13. Keyboard and mouse reference
+## 14. Keyboard and mouse reference
 
 | Input | Action |
 |-------|--------|
 | drag point / object / restart cross | move it |
+| drag door tab / door row dot | move the door / one row (Shift: sideways only / all rows) |
 | Shift + drag point | keep an even slope |
 | Alt + drag object | do not snap to the terrain |
 | click a wall line | add a point |
@@ -417,7 +493,7 @@ They then become the template for new games.
 | Ctrl + O | open a game |
 | `?` | open this guide (Esc closes it) |
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 **"no build API here" / "the editor server is not running".** Building,
 playing and New from template need the editor's server: start the editor with
@@ -436,7 +512,7 @@ knows which file the game came from. Pick the same file again (Chrome and
 Edge), or use the newest download (other browsers).
 
 **The build fails.** Read the error list under Build and play. Out of memory:
-see [Memory](#10-memory). Anything else is usually a hand edit in the `.asm`
+see [Memory](#11-memory). Anything else is usually a hand edit in the `.asm`
 files; the KickAssembler log has the details.
 
 **The memory meter shows one bar labelled "main block".** The editor does not
@@ -444,7 +520,7 @@ know the mod's levels area. Restart the editor server, then reload the page.
 
 **Keys do nothing in the game.** Click anywhere on the page so the browser tab
 has the keyboard. Thrust uses the keyboard only (no joystick); see the key
-table in [Building and playing](#11-building-and-playing).
+table in [Building and playing](#12-building-and-playing).
 
 **An object floats above the ground (or sinks into it) in the game.** The
 terrain under it was changed while snapping was off, or by hand in the `.asm`

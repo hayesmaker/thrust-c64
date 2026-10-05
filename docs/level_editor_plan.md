@@ -37,7 +37,8 @@ From `docs/level_format.md` and `tools/terrainview.py`:
   spread bits 0-1). Object 0 = pod stand, ≤ 32 objects, fuel among the first 12.
 * Restart points: 6 rows × n (ship Y_EXT, ship Y, window X, window Y_EXT,
   window Y, ship X). Window ≈ ship − (`$16`, `$64`).
-* Doors are code (`tick_door_logic`), not data: levels 3-5 only.
+* Doors were code (`tick_door_logic`), levels 3-5 only; thrusty-levels now has
+  them as per-level tables (see Doors and rules below).
 * c64-ready: `?game=<http url>` loads a PRG from any URL; the npm package
   exports `C64Player` with `loadGameData()` and `cpuWrite()` for embedding.
 
@@ -196,4 +197,10 @@ increasing rows. The tables are generated, never edited by hand:
 ## After the MVP
 - [ ] New levels (7+): pointer/lookup table entries, `cmp #$06`, placement in
       `$1000-$1FFF`, colours/gravity — see "Adding levels" in level_format.md.
-- [ ] Door editor (needs generated `tick_door_logic` routines).
+- [x] Door editor and rules (2026-10-05): `tick_door_logic` in thrusty-levels is
+      table driven (`level_door_*`, `level_N_door_x`): one door per level, left
+      or right wall, per-row shape, slide or reveal, open time. Reverse gravity /
+      invisible landscape come from a round cycle table plus per-level rules
+      (`round_cycle_*`, `level_rule_*`, `apply_level_rules`). Editor: Door and
+      Rules panel sections, door tab / row handles on the map, game files v2
+      (v1 files and older mod sources get the original doors added).

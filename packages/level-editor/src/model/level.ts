@@ -3,6 +3,15 @@
 
 import { type AsmDoc, type AsmValue, blockBytes, blockValues, parseAsm, serializeAsm, writeBlock } from './asm';
 import {
+  type Door,
+  type LevelRules,
+  type Round,
+  RULES,
+  defaultRules,
+  modeByte,
+  upgradeSources,
+} from './door';
+import {
   LEFT_START_X,
   RIGHT_START_X,
   type Point,
@@ -77,10 +86,15 @@ export interface Level {
   restarts: RestartPoint[];
   gravity: number;
   colours: Colours;
+  /** null: no door */
+  door: Door | null;
+  rules: LevelRules;
 }
 
 export interface Project {
   levels: Level[];
+  /** reverse / invisible per round (one pass through all levels), repeating */
+  roundCycle: Round[];
   /** The source files as loaded; saveProject patches fresh copies of them. */
   levelsAsm: string;
   tablesAsm: string;
@@ -115,7 +129,28 @@ function readWall(doc: AsmDoc, n: number, c: string, s: string, start: number): 
   return { start, raw, points: importWall(raw, start) };
 }
 
+function readDoor(levelsDoc: AsmDoc, d: Record<string, number[]>, n: number): Door | null {
+  const k = d.rows[n];
+  if (!k) return null;
+  const rows = blockBytes(levelsDoc, O(n, 'door_x'));
+  if (rows.length < k) throw new Error(`level_${n}_door_x: ${rows.length} bytes, level_door_rows says ${k}`);
+  return {
+    side: d.mode[n] & 0x80 ? 'right' : 'left',
+    top: d.top_HI[n] * 256 + d.top_LO[n],
+    mode: d.mode[n] & 0x40 ? 'reveal' : 'slide',
+    rows: rows.slice(0, k),
+    max: d.max[n],
+    openX: d.open_x[n],
+    time: d.time[n],
+  };
+}
+
+const DOOR_TABLES = ['rows', 'top_LO', 'top_HI', 'mode', 'max', 'open_x', 'time'] as const;
+
+/** Load the level sources. Sources from before doors and rules were data get
+ *  their tables added (with the original game's doors). */
 export function loadProject(levelsAsm: string, tablesAsm: string): Project {
+  ({ levelsAsm, tablesAsm } = upgradeSources(levelsAsm, tablesAsm));
   const levelsDoc = parseAsm(levelsAsm);
   const tablesDoc = parseAsm(tablesAsm);
   const sizes = blockBytes(tablesDoc, 'level_reset_data_sizes');
@@ -123,6 +158,13 @@ export function loadProject(levelsAsm: string, tablesAsm: string): Project {
   const colourTabs = Object.fromEntries(
     COLOUR_KEYS.map((k) => [k, blockBytes(tablesDoc, `level_colour_${k}`)]),
   ) as Record<ColourKey, number[]>;
+  const doorTabs = Object.fromEntries(DOOR_TABLES.map((k) => [k, blockBytes(tablesDoc, `level_door_${k}`)]));
+  const rule = (v: number) => RULES[v & 3];
+  const ruleRev = blockBytes(tablesDoc, 'level_rule_reverse');
+  const ruleInv = blockBytes(tablesDoc, 'level_rule_invisible');
+  const cycRev = blockBytes(tablesDoc, 'round_cycle_reverse');
+  const cycInv = blockBytes(tablesDoc, 'round_cycle_invisible');
+  const roundCycle = cycRev.map((v, i) => ({ reverse: v !== 0, invisible: (cycInv[i] ?? 0) !== 0 }));
 
   const levels: Level[] = [];
   for (let n = 0; n < LEVEL_COUNT; n++) {
@@ -151,15 +193,28 @@ export function loadProject(levelsAsm: string, tablesAsm: string): Project {
       restarts,
       gravity: gravity[n],
       colours: Object.fromEntries(COLOUR_KEYS.map((c) => [c, colourTabs[c][n]])) as Colours,
+      door: readDoor(levelsDoc, doorTabs, n),
+      rules: { reverse: rule(ruleRev[n]), invisible: rule(ruleInv[n]) },
     });
   }
-  return { levels, levelsAsm, tablesAsm };
+  return { levels, roundCycle, levelsAsm, tablesAsm };
+}
+
+/** Levels from a game file, with fields that older files lack taken from
+ *  `p` (the project loaded from the game's sources). */
+export function upgradeLevels(p: Project, levels: Level[]): Level[] {
+  return levels.map((l, i) => ({
+    ...l,
+    door: l.door === undefined ? (p.levels[i]?.door ?? null) : l.door,
+    rules: l.rules ?? p.levels[i]?.rules ?? defaultRules(),
+  }));
 }
 
 /** Write every level into copies of the loaded sources; returns the new sources. */
 export function saveProject(p: Project): { levelsAsm: string; tablesAsm: string } {
-  const L = parseAsm(p.levelsAsm);
-  const Tb = parseAsm(p.tablesAsm);
+  const src = upgradeSources(p.levelsAsm, p.tablesAsm);
+  const L = parseAsm(src.levelsAsm);
+  const Tb = parseAsm(src.tablesAsm);
   for (const l of p.levels) {
     const n = l.index;
     for (const [w, c, s] of [
@@ -196,7 +251,23 @@ export function saveProject(p: Project): { levelsAsm: string; tablesAsm: string 
     setAt(Tb, 'level_reset_ptr2_table_HI', n, `>(level_${n}_reset_data+${k})`);
     setAt(Tb, 'level_gravity_FRAC_table', n, l.gravity);
     for (const c of COLOUR_KEYS) setAt(Tb, `level_colour_${c}`, n, l.colours[c]);
+
+    const d = l.door;
+    setAt(Tb, 'level_door_rows', n, d ? d.rows.length : 0);
+    setAt(Tb, 'level_door_top_LO', n, d ? d.top & 0xff : 0);
+    setAt(Tb, 'level_door_top_HI', n, d ? (d.top >> 8) & 0xff : 0);
+    setAt(Tb, 'level_door_mode', n, modeByte(d));
+    setAt(Tb, 'level_door_max', n, d ? d.max : 0);
+    setAt(Tb, 'level_door_open_x', n, d ? d.openX : 0);
+    setAt(Tb, 'level_door_time', n, d ? d.time : 0xff);
+    // a level without a door keeps one placeholder byte, so the label exists
+    writeBlock(L, O(n, 'door_x'), d?.rows.length ? d.rows : [0], { perLine: 16 });
+    setAt(Tb, 'level_rule_reverse', n, RULES.indexOf(l.rules.reverse));
+    setAt(Tb, 'level_rule_invisible', n, RULES.indexOf(l.rules.invisible));
   }
+  const c = p.roundCycle;
+  writeBlock(Tb, 'round_cycle_reverse', c.map((r) => (r.reverse ? 0xff : 0)));
+  writeBlock(Tb, 'round_cycle_invisible', c.map((r) => (r.invisible ? 0xff : 0)));
   return { levelsAsm: serializeAsm(L), tablesAsm: serializeAsm(Tb) };
 }
 

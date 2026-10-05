@@ -80,6 +80,13 @@ label.inline { display: flex; align-items: center; gap: 8px; }
 label.inline input { width: 80px; }
 select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line);
   border-radius: 4px; padding: 4px 6px; font: inherit; }
+textarea { width: 100%; box-sizing: border-box; background: var(--bg); color: var(--text); border: 1px solid var(--line);
+  border-radius: 4px; padding: 4px 6px; font: 12px ui-monospace, monospace; resize: vertical; }
+#d-none[hidden], #d-edit[hidden], #d-openx-box[hidden] { display: none; }
+.rounds { list-style: none; margin: 4px 0; padding: 0; font-size: 12px; }
+.rounds li { display: flex; align-items: center; gap: 10px; padding: 2px 0; }
+.rounds li label.inline { gap: 4px; margin: 0; }
+.rounds li button { margin-left: auto; padding: 0 6px; }
 .list { list-style: none; margin: 4px 0; padding: 0; max-height: 220px; overflow-y: auto;
   font: 12px ui-monospace, monospace; counter-reset: item -1; }
 .list li { counter-increment: item; padding: 2px 6px; border-radius: 3px; cursor: pointer; display: flex; gap: 6px;
@@ -162,3 +169,4 @@ input[type=text] { width: 100%; background: var(--bg); color: var(--text); borde
 .guide-body blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--accent); color: var(--muted); }
 .guide-body a { color: #a99cf0; }
 .guide-body hr { border: none; border-top: 1px solid var(--line); }
+.rounds input[type="checkbox"] { width: auto; }
