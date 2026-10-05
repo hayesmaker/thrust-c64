@@ -29,14 +29,63 @@ data is reached through the pointer tables, so nothing else changed.
 
 | Data | Where | Room |
 |------|-------|------|
-| `levels.asm` (terrain, objects) | `$1000-$1FFF` (`LEVELS_AREA_START/END`) | 4096 bytes (842 used) |
-| `level_tables.asm` (restart points, pointers, colours, gravity) | main block, must end below `$C000` | 1058 bytes free |
+| `levels.asm` (terrain, objects, door shapes) | `$1000-$1FFF` (`LEVELS_AREA_START/END`) | 4096 bytes (894 used) |
+| `level_tables.asm` (restart points, pointers, colours, gravity, doors, rules) | main block, must end below `$C000` | 997 bytes free |
 
 Both limits are `.errorif` checks in `thrust.asm`, so an overflow stops the
 build with a message such as `levels.asm is 46 bytes too big for the levels
 area $1000-$1fff`. (KickAssembler's `.assert` only prints a warning and still
 writes the PRG.) The level editor shows both areas and warns when either gets
 tight.
+
+## Doors and rules
+
+Doors and the reverse gravity / invisible landscape rules are data here, not
+code. The original game had a routine per door level in `tick_door_logic`;
+the mod has one routine that reads per-level tables, and the default tables
+give the original game's doors and round sequence. The level editor edits all
+of this (Door and Rules in its side panel).
+
+**Doors** (`level_door_*` in `level_tables.asm`, shapes `level_N_door_x` in
+`levels.asm`). Each level has at most one door. Shooting any door switch
+(object 7 or 8) on the level sets the switch counter to `level_door_time`; it
+counts down one per tick. The opening grows one step per tick up to
+`level_door_max`, stays there, and follows the counter back down to 0 (closed).
+
+| Table | Meaning |
+|-------|---------|
+| `level_door_rows` | number of door rows; 0 = no door |
+| `level_door_top_LO/HI` | world Y of the first door row |
+| `level_door_mode` | bit 7: right wall (else left); bit 6: reveal (else slide) |
+| `level_door_max` | maximum opening |
+| `level_door_open_x` | reveal mode: wall X of an opened row |
+| `level_door_time` | switch counter start value (`$FF` in the original) |
+| `level_door_shape_LO/HI` | pointers to `level_N_door_x`: the closed wall X of each row |
+
+Each tick the door is visible, `tick_door_logic` writes each row's wall X into
+the decoded wall (`terrain_left_wall` or `terrain_right_wall`):
+
+* slide: closed X minus the opening (left wall) or plus it (right wall). The
+  original levels 3 (straight) and 5 (diamond) work this way.
+* reveal: the top <opening> rows are `level_door_open_x`, the rest closed X.
+  The original level 4 works this way.
+
+A level without a door keeps one placeholder byte in `level_N_door_x`. The
+routine is checked against the original three routines in the 6502 emulator:
+the only difference is that the level 4 door is now also drawn when its top
+row is exactly at the top of the window, and no longer when its last row is
+at window offset `$FD`. The original routines disagreed by one row there.
+
+**Rules** (`level_rule_*`, `round_cycle_*`). A round is one pass through all
+six levels. Round `n` uses entry `n` of `round_cycle_reverse` and
+`round_cycle_invisible` (`$00` off, `$FF` on), wrapping after the last entry.
+The default is the original sequence: normal, reverse, invisible, reverse +
+invisible. Both tables must have the same length (an `.errorif` checks it).
+Each level's `level_rule_reverse` / `level_rule_invisible` then changes the
+round's flag: 0 follow the round, 1 always on, 2 always off, 3 the opposite.
+`apply_level_rules` works this out at the start of every level, so the
+"reverse gravity" / "invisible landscape" messages appear the first time a
+flag comes on, whichever level that is.
 
 ## Title screen
 

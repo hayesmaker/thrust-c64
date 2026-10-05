@@ -202,6 +202,10 @@ hard-coded routine that overwrites rows of the decoded left wall
 A new level with a door needs its own routine in `tick_door_logic` (copy one
 of the existing ones and change the constants).
 
+The thrusty-levels mod replaces these routines with one table-driven routine:
+any level can have a door on either wall, with a shape set per row. See
+[Doors and rules](../packages/thrusty-levels/README.md#doors-and-rules).
+
 ## Level sequence
 
 `start_new_level` increments `level_number` and compares it with **6**
@@ -209,7 +213,8 @@ of the existing ones and change the constants).
 whenever reverse gravity switches back off, invisible landscape toggles. So the
 rounds go: normal, reverse gravity, invisible, reverse + invisible, normal, ...
 Guns fire more often from mission 3 on (`level_hostile_gun_probability`, capped
-at `$23`).
+at `$23`). In the thrusty-levels mod the round sequence is a table and each
+level can override it (see the same section).
 
 ## Changing a level
 

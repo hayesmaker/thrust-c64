@@ -82,6 +82,46 @@ level_reset_ptr2_table_HI:
     .byte >(level_5_reset_data+5)               // $a8f6  
 level_gravity_FRAC_table:
     .byte $05,$07,$09,$0b,$0c,$0d               // $a8f7  
+// ----------------------------------------------------------------------------
+// Doors: at most one per level, opened by any door switch (object type 7/8) on it.
+// Rows 0 = no door. Mode bit7: right wall (else left), bit6: reveal (else slide).
+// slide:  wall X = closed X - opening (left wall) or + opening (right wall)
+// reveal: the top <opening> rows are level_door_open_x, the rest closed X
+// Closed X per row: level_N_door_x in levels.asm.
+// ----------------------------------------------------------------------------
+level_door_rows:
+    .byte $00,$00,$00,$0d,$15,$0f
+level_door_top_LO:
+    .byte $00,$00,$00,$69,$44,$70
+level_door_top_HI:
+    .byte $00,$00,$00,$02,$03,$03
+level_door_mode:
+    .byte $00,$00,$00,$00,$40,$00
+level_door_max:
+    .byte $00,$00,$00,$10,$15,$12
+level_door_open_x:
+    .byte $00,$00,$00,$00,$98,$00
+level_door_time:
+    .byte $ff,$ff,$ff,$ff,$ff,$ff
+level_door_shape_LO:
+    .byte <(level_0_door_x),<(level_1_door_x),<(level_2_door_x),<(level_3_door_x),<(level_4_door_x),<(level_5_door_x)
+level_door_shape_HI:
+    .byte >(level_0_door_x),>(level_1_door_x),>(level_2_door_x),>(level_3_door_x),>(level_4_door_x),>(level_5_door_x)
+// ----------------------------------------------------------------------------
+// Rules: reverse gravity / invisible landscape. Each round (one pass through all
+// levels) uses the next round_cycle_* entry ($00 off, $ff on); a level rule then
+// changes it: 0 follow round, 1 on, 2 off, 3 invert round.
+// ----------------------------------------------------------------------------
+level_rule_reverse:
+    .byte $00,$00,$00,$00,$00,$00
+level_rule_invisible:
+    .byte $00,$00,$00,$00,$00,$00
+round_cycle_reverse:
+    .byte $00,$ff,$00,$ff
+round_cycle_invisible:
+    .byte $00,$00,$ff,$ff
+round_cycle_end:
+    .errorif round_cycle_end - round_cycle_invisible != round_cycle_invisible - round_cycle_reverse, "round_cycle_reverse and round_cycle_invisible must have the same length"
 terrain_left_wall_counter_ptrs_LO:
     .byte <(terrain_data_level_0_A)             // $a8fd  
     .byte <(terrain_data_level_1_A)             // $a8fe  
