@@ -4,7 +4,8 @@
 // level_tables.asm text they patch. The mod source on disk is only the
 // template new games start from; the editor never writes it.
 
-import { type Level, type Project, decodeLevel, levelRows, loadProject } from '../model/level';
+import { type Round } from '../model/door';
+import { type Level, type Project, decodeLevel, levelRows, loadProject, upgradeLevels } from '../model/level';
 import { snapObject } from '../model/objects';
 import { type Layout } from '../model/validate';
 
@@ -13,7 +14,9 @@ export type Side = 'left' | 'right';
 export type Selection =
   | { kind: 'point'; side: Side; index: number }
   | { kind: 'object'; index: number }
-  | { kind: 'restart'; index: number };
+  | { kind: 'restart'; index: number }
+  /** door handle: index -1 = the door (top tab), 0.. = a door row */
+  | { kind: 'door'; index: number };
 
 export const sameSelection = (a: Selection | null, b: Selection | null): boolean =>
   !!a && !!b && a.kind === b.kind && a.index === b.index && (a.kind !== 'point' || a.side === (b as typeof a).side);
@@ -24,7 +27,8 @@ const HISTORY_LIMIT = 200;
 export const ROWS_MARGIN = 300;
 
 export const GAME_FORMAT = 'thrust-level-editor/game';
-export const GAME_VERSION = 1;
+/** 2: doors, level rules and the round cycle */
+export const GAME_VERSION = 2;
 export const DEFAULT_NAME = 'my thrust game';
 
 /** A saved game (JSON file). Older files (no format) are read too. */
@@ -32,9 +36,13 @@ export interface GameFile {
   format?: string;
   version?: number;
   name?: string;
+  /** shown on the title screen as "BY <author>" */
+  author?: string;
   levelsAsm: string;
   tablesAsm: string;
   levels: Level[];
+  /** version 2 */
+  roundCycle?: Round[];
   level?: number;
   /** autosave only */
   layout?: Layout | null;
@@ -48,6 +56,8 @@ export class Store {
   project: Project | null = null;
   /** Game name; the JSON file is named after it. */
   name = DEFAULT_NAME;
+  /** Author, for the title screen ('' = none). */
+  author = '';
   /** File the game was opened from or last saved to (null: never saved). */
   fileName: string | null = null;
   level = 0;
@@ -55,6 +65,8 @@ export class Store {
   hover: Selection | null = null;
   /** Dragged/added objects rest on the terrain (Alt inverts while dragging). */
   snapObjects = true;
+  /** Door opening shown in the view (0 = closed). */
+  doorPreview = 0;
   /** Set while the emulator has the keyboard: editor shortcuts are off. */
   inputPaused = false;
   /** Where the mod keeps level data (from the server; null = original layout). */
@@ -114,9 +126,10 @@ export class Store {
   }
 
   /** Start editing a game. `fileName` null = not saved anywhere yet. */
-  load(project: Project, name: string, fileName: string | null = null): void {
+  load(project: Project, name: string, fileName: string | null = null, author = ''): void {
     this.project = project;
     this.name = name;
+    this.author = author;
     this.fileName = fileName;
     this.savedState = this.state();
     this.level = 0;
@@ -169,12 +182,13 @@ export class Store {
   }
 
   private snapshot(): string {
-    return JSON.stringify({ levels: this.project!.levels, level: this.level });
+    return JSON.stringify({ levels: this.project!.levels, roundCycle: this.project!.roundCycle, level: this.level });
   }
 
   private restore(s: string): void {
-    const { levels, level } = JSON.parse(s);
+    const { levels, roundCycle, level } = JSON.parse(s);
     this.project!.levels = levels;
+    this.project!.roundCycle = roundCycle;
     this.level = level;
     this.selection = null;
     this.changed();
@@ -198,7 +212,7 @@ export class Store {
   }
 
   private state(): string {
-    return this.project ? JSON.stringify([this.name, this.project.levels]) : '';
+    return this.project ? JSON.stringify([this.name, this.author, this.project.levels, this.project.roundCycle]) : '';
   }
 
   /** The game differs from the file it was opened from or saved to (or
@@ -214,11 +228,18 @@ export class Store {
       format: GAME_FORMAT,
       version: GAME_VERSION,
       name: this.name,
+      author: this.author,
       levelsAsm: p.levelsAsm,
       tablesAsm: p.tablesAsm,
       levels: p.levels,
+      roundCycle: p.roundCycle,
       level: this.level,
     };
+  }
+
+  setAuthor(author: string): void {
+    this.author = author;
+    this.notify(true);
   }
 
   setName(name: string): void {
@@ -241,9 +262,10 @@ export class Store {
     if ((s.version ?? 1) > GAME_VERSION) throw new Error('made by a newer version of the editor');
     const p = loadProject(s.levelsAsm, s.tablesAsm);
     if (s.levels.length !== p.levels.length) throw new Error(`${s.levels.length} levels, expected ${p.levels.length}`);
-    p.levels = s.levels;
+    p.levels = upgradeLevels(p, s.levels);
+    if (Array.isArray(s.roundCycle) && s.roundCycle.length) p.roundCycle = s.roundCycle;
     const name = s.name ?? fileName?.replace(/\.json$/i, '') ?? DEFAULT_NAME;
-    this.load(p, name, fileName);
+    this.load(p, name, fileName, typeof s.author === 'string' ? s.author : '');
     this.level = Math.min(Math.max(0, s.level ?? 0), p.levels.length - 1);
     this.changed(false);
   }

@@ -20,7 +20,7 @@ const game = JSON.parse(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd
 
 const vite = await createServer({ root: PACKAGE_DIR, configFile: false, server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
 try {
-  const { loadProject, saveProject } = await vite.ssrLoadModule('/src/model/level.ts');
+  const { loadProject, saveProject, upgradeLevels } = await vite.ssrLoadModule('/src/model/level.ts');
   if (typeof game.levelsAsm !== 'string' || typeof game.tablesAsm !== 'string' || !Array.isArray(game.levels))
     throw new Error(`${arg} is not a Thrust level editor game file`);
   const files = { levelsAsm: join(MOD_SRC, 'levels.asm'), tablesAsm: join(MOD_SRC, 'level_tables.asm') };
@@ -30,8 +30,13 @@ try {
   // patch the mod's current files, so hand edits elsewhere in them are kept
   const project = loadProject(disk.levelsAsm, disk.tablesAsm);
   if (game.levels.length !== project.levels.length) throw new Error(`${game.levels.length} levels, expected ${project.levels.length}`);
-  project.levels = game.levels;
-  const out = saveProject(project);
+  // older games: doors / rules from the game's own sources
+  project.levels = upgradeLevels(loadProject(game.levelsAsm, game.tablesAsm), game.levels);
+  if (Array.isArray(game.roundCycle) && game.roundCycle.length) project.roundCycle = game.roundCycle;
+  const out = saveProject(project, {
+    ...(typeof game.name === 'string' ? { title: game.name } : {}),
+    author: typeof game.author === 'string' ? game.author : '',
+  });
   for (const k of ['levelsAsm', 'tablesAsm'] as const) {
     if (out[k] === disk[k]) console.log(`unchanged ${files[k]}`);
     else {

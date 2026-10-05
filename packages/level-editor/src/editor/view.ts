@@ -7,7 +7,7 @@
 import { PALETTE_RGB, hex2, hex3 } from '../c64';
 import type { Level, Wall } from '../model/level';
 import { GUN_MUZZLE, gunArc, isGun } from '../model/objects';
-import { DOORS } from '../model/validate';
+import { doorWallX } from '../model/door';
 import { OBJ_BOUNDS, SPRITE_ROWS, SPRITE_UNITS, objectParts, spriteImage } from './look';
 import { wallXAt } from './ops';
 import { type Selection, type Side, type Store, sameSelection } from './store';
@@ -235,18 +235,99 @@ export class View {
     c.setLineDash([]);
   }
 
+  /** The door as the game will show it at the preview opening: each door row
+   *  replaces the wall there, so rock out to the door edge (orange) and, where
+   *  the edge is set back into the terrain, a hole cut into the rock (black,
+   *  hatched). Faint: the closed door. Handles on the closed edge of each row
+   *  and a tab on top. */
   private drawDoor(l: Level): void {
-    const door = DOORS[l.index];
-    if (!door) return;
+    const d = l.door;
+    if (!d) return;
     const c = this.ctx;
-    const { left } = this.store.decoded;
-    c.fillStyle = 'rgba(221,136,85,0.85)';
-    for (const t of this.tiles())
-      door.xs.forEach((dx, k) => {
-        const row = door.top + k;
-        const lx = left[Math.min(row, left.length - 1)];
-        if (dx > lx) c.fillRect(this.sx(lx + t), this.sy(row), (dx - lx) * this.ux, Math.max(1, this.scale));
+    const wall = this.store.decoded[d.side];
+    const now = doorWallX(d, Math.min(this.store.doorPreview, d.max));
+    const sel = this.store.selection;
+    const hov = this.store.hover;
+    const doorSel = sel?.kind === 'door';
+    const h = Math.max(1, this.scale);
+    // rock between the terrain wall and the door edge at X
+    const span = (row: number, x: number): [number, number] | null => {
+      const w = wall[Math.min(row, wall.length - 1)];
+      if (w === undefined) return null;
+      return d.side === 'left' ? (x > w ? [w, x] : null) : x < w ? [x + 1, w + 1] : null;
+    };
+    // terrain rock that the door row turns into cave (edge set back into the wall)
+    const carved = (row: number, x: number): [number, number] | null => {
+      const w = wall[Math.min(row, wall.length - 1)];
+      if (w === undefined) return null;
+      return d.side === 'left' ? (x < w ? [x, w] : null) : x > w ? [w + 1, x + 1] : null;
+    };
+    for (const t of this.tiles()) {
+      d.rows.forEach((closed, k) => {
+        const row = d.top + k;
+        const y = this.sy(row);
+        const a = span(row, closed);
+        if (a) {
+          c.fillStyle = 'rgba(221,136,85,0.25)';
+          c.fillRect(this.sx(a[0] + t), y, (a[1] - a[0]) * this.ux, h);
+        }
+        const b = span(row, now[k]);
+        if (b) {
+          c.fillStyle = 'rgba(221,136,85,0.9)';
+          c.fillRect(this.sx(b[0] + t), y, (b[1] - b[0]) * this.ux, h);
+        }
+        const cut = carved(row, now[k]);
+        if (cut) {
+          c.fillStyle = '#000';
+          c.fillRect(this.sx(cut[0] + t), y, (cut[1] - cut[0]) * this.ux, h);
+          if ((row & 1) === 0) {
+            c.fillStyle = 'rgba(221,136,85,0.35)';
+            c.fillRect(this.sx(cut[0] + t), y, (cut[1] - cut[0]) * this.ux, Math.max(1, h / 2));
+          }
+        }
       });
+      // closed edge
+      c.strokeStyle = doorSel ? '#ffd34f' : 'rgba(255,200,150,0.9)';
+      c.lineWidth = doorSel ? 2 : 1;
+      c.beginPath();
+      d.rows.forEach((x, k) => {
+        const ex = this.sx(this.doorEdge(d.side, x) + t);
+        c[k ? 'lineTo' : 'moveTo'](ex, this.sy(d.top + k));
+        c.lineTo(ex, this.sy(d.top + k + 1));
+      });
+      c.stroke();
+      // row handles (when there is room, or while editing the door)
+      if (doorSel || this.scale >= 4)
+        d.rows.forEach((x, k) => {
+          const me: Selection = { kind: 'door', index: k };
+          const on = sameSelection(sel, me) || sameSelection(hov, me);
+          const r = on ? 4 : 2.5;
+          c.fillStyle = sameSelection(sel, me) ? '#fff' : '#ffb27a';
+          c.beginPath();
+          c.arc(this.sx(this.doorEdge(d.side, x) + t), this.sy(d.top + k + 0.5), r, 0, Math.PI * 2);
+          c.fill();
+        });
+      // tab
+      const tab = this.doorTab(d, t);
+      const me: Selection = { kind: 'door', index: -1 };
+      c.fillStyle = sameSelection(sel, me) ? '#ffd34f' : sameSelection(hov, me) ? '#ffc79a' : '#dd8855';
+      c.fillRect(tab.x, tab.y, tab.w, tab.h);
+      c.fillStyle = '#000';
+      c.font = '10px ui-monospace, monospace';
+      c.textBaseline = 'middle';
+      c.fillText('door', tab.x + 3, tab.y + tab.h / 2 + 1);
+    }
+  }
+
+  /** World X of a door row's edge (the left wall is solid up to X). */
+  private doorEdge(side: Side, x: number): number {
+    return side === 'left' ? x : x + 1;
+  }
+
+  private doorTab(d: NonNullable<Level['door']>, t: number): { x: number; y: number; w: number; h: number } {
+    const w = 32;
+    const ex = this.sx(this.doorEdge(d.side, d.rows[0]) + t);
+    return { x: d.side === 'left' ? ex - w : ex, y: this.sy(d.top) - 13, w, h: 12 };
   }
 
   private drawObjects(l: Level): void {
@@ -457,6 +538,23 @@ export class View {
           }
         });
     return best;
+  }
+
+  /** Door tab (index -1) or row handle under the mouse. */
+  hitDoor(sx: number, sy: number): { index: number; tile: number } | null {
+    const d = this.store.current?.door;
+    if (!d) return null;
+    const rowsShown = this.store.selection?.kind === 'door' || this.scale >= 4;
+    for (const t of this.tiles()) {
+      const tab = this.doorTab(d, t);
+      if (sx >= tab.x && sx <= tab.x + tab.w && sy >= tab.y && sy <= tab.y + tab.h) return { index: -1, tile: t };
+      if (!rowsShown) continue;
+      const w = this.toWorld(sx, sy);
+      const k = Math.floor(w.row) - d.top;
+      if (k < 0 || k >= d.rows.length) continue;
+      if (Math.abs(this.sx(this.doorEdge(d.side, d.rows[k]) + t) - sx) <= HIT) return { index: k, tile: t };
+    }
+    return null;
   }
 
   hitObject(sx: number, sy: number): { index: number; tile: number; grabX: number; grabY: number } | null {

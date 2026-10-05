@@ -137,3 +137,16 @@ level_5_obj_type:
 level_5_gun_param:
     .byte $00,$00,$00,$00,$00,$00,$1a,$06,$09,$12,$06,$16,$12,$1b,$12,$05  // $a341  gun parameters: bits 2-4 base angle, bits 0-1 spread
     .byte $0e                                   // $a351  
+// Door shapes: closed wall X per door row (see level_door_* in level_tables.asm)
+level_0_door_x:
+    .byte $00
+level_1_door_x:
+    .byte $00
+level_2_door_x:
+    .byte $00
+level_3_door_x:
+    .byte $ae,$ae,$ae,$ae,$ae,$ae,$ae,$ae,$ae,$ae,$ae,$ae,$ae
+level_4_door_x:
+    .byte $a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6,$a6
+level_5_door_x:
+    .byte $c0,$c1,$c2,$c3,$c4,$c5,$c6,$c7,$c6,$c5,$c4,$c3,$c2,$c1,$c0

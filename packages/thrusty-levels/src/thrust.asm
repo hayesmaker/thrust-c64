@@ -1081,7 +1081,8 @@ bullet_test_loop:
     beq handle_door_switch                      // $8667  
     jmp handle_generator                        // $8669  
 handle_door_switch:
-    lda #$ff                                    // $866c  
+    ldy level_number                            // $866c  door open time per level
+    lda level_door_time,y                       //        
     sta door_switch_counter_A                   // $866e  
     jsr explosion_at_bullet                     // $8670  
 handle_generator:
@@ -2500,157 +2501,91 @@ L9179:
 L917c:
     rts                                         // $917c  
 tick_door_logic:
-    lda door_switch_counter_A                   // $917d  door switch shot: counter set to $FF, counts down
-    beq door_switch_zero                        // $917f  
-    dec door_switch_counter_A                   // $9181  
+    lda door_switch_counter_A                   // door switch shot: counter set to level_door_time, counts down
+    beq door_switch_zero
+    dec door_switch_counter_A
 door_switch_zero:
-    lda level_number                            // $9183  only levels 3, 4 and 5 have doors
-    cmp #$03                                    // $9186  
-    beq level_3_door_logic                      // $9188  
-    cmp #$05                                    // $918a  
-    beq level_5_door_logic                      // $918c  
-    cmp #$04                                    // $918e  
-    beq level_4_door_logic                      // $9190  
-    rts                                         // $9192  
-level_5_door_logic:
-    jmp do_level_5_door_logic                   // $9193  
-level_4_door_logic:
-    jmp do_level_4_door_logic                   // $9196  
-level_3_door_logic:
-    sec                                         // $9199  
-    lda #$69                                    // $919a  door top: world Y $0269
-    sbc window_ypos_INT                         // $919c  
-    sta door_screen_ypos                        // $919e  
-    lda #$02                                    // $91a0  
-    sbc window_ypos_EXT                         // $91a2  
-    bne level_3_door_logic_return               // $91a4  
-    lda door_screen_ypos                        // $91a6  
-    cmp #$f1                                    // $91a8  on screen?
-    bcc level_3_door_visible                    // $91aa  
-level_3_door_logic_return:
-    rts                                         // $91ac  
-level_3_door_visible:
-    lda door_switch_counter_A                   // $91ad  door open amount follows the switch counter,
-    cmp #$10                                    // $91af  
-    bcs level_3_door_closing                    // $91b1  
-    sta door_switch_counter_B                   // $91b3  
-    jmp level_3_door_draw                       // $91b5  
-level_3_door_closing:
-    lda door_switch_counter_B                   // $91b8  then closes slowly
-    cmp #$10                                    // $91ba  
-    bcs level_3_door_draw                       // $91bc  
-    inc door_switch_counter_B                   // $91be  
-level_3_door_draw:
-    sec                                         // $91c0  
-    lda #$ae                                    // $91c1  door: left wall X = $AE - opening
-    sbc door_switch_counter_B                   // $91c3  
-    pha                                         // $91c5  
-    lda door_screen_ypos                        // $91c6  wall array row of the door top
-    clc                                         // $91c8  
-    adc terrain_window_y_index                  // $91c9  
-    tay                                         // $91cc  
-    pla                                         // $91cd  
-    ldx #$0d                                    // $91ce  13 rows
-level_3_door_draw_loop:
-    sta terrain_left_wall,y                     // $91d0  
-    iny                                         // $91d3  
-    dex                                         // $91d4  
-    bne level_3_door_draw_loop                  // $91d5  
-    rts                                         // $91d7  
-do_level_4_door_logic:
-    sec                                         // $91d8  
-    lda #$43                                    // $91d9  door top: world Y $0343
-    sbc window_ypos_INT                         // $91db  
-    sta door_screen_ypos                        // $91dd  
-    lda #$03                                    // $91df  
-    sbc window_ypos_EXT                         // $91e1  
-    bne do_level_4_door_logic_return            // $91e3  
-    lda door_screen_ypos                        // $91e5  
-    cmp #$e9                                    // $91e7  
-    bcc level_4_door_visible                    // $91e9  
-do_level_4_door_logic_return:
-    rts                                         // $91eb  
-level_4_door_visible:
-    lda door_switch_counter_A                   // $91ec  
-    cmp #$15                                    // $91ee  max opening 21 rows
-    bcs level_4_door_closing                    // $91f0  
-    sta door_switch_counter_B                   // $91f2  
-    jmp level_4_door_draw                       // $91f4  
-level_4_door_closing:
-    lda door_switch_counter_B                   // $91f7  
-    cmp #$15                                    // $91f9  
-    bcs level_4_door_draw                       // $91fb  
-    inc door_switch_counter_B                   // $91fd  
-level_4_door_draw:
-    lda door_screen_ypos                        // $91ff  
-    clc                                         // $9201  
-    adc terrain_window_y_index                  // $9202  
-    clc                                         // $9205  
-    adc #$15                                    // $9206  bottom row of the door
-    tax                                         // $9208  
-    lda #$a6                                    // $9209  closed door wall X
-    ldy #$15                                    // $920b  
-level_4_door_draw_loop:
-    cpy door_switch_counter_B                   // $920d  
-    bne level_4_door_store                      // $920f  
-    lda #$98                                    // $9211  open part: wall X $98
-level_4_door_store:
-    sta terrain_left_wall,x                     // $9213  
-    dex                                         // $9216  
-    dey                                         // $9217  
-    bne level_4_door_draw_loop                  // $9218  
-    rts                                         // $921a  
-do_level_5_door_logic:
-    sec                                         // $921b  
-    lda #$70                                    // $921c  door top: world Y $0370
-    sbc window_ypos_INT                         // $921e  
-    sta door_screen_ypos                        // $9220  
-    lda #$03                                    // $9222  
-    sbc window_ypos_EXT                         // $9224  
-    bne do_level_5_door_logic_return            // $9226  
-    lda door_screen_ypos                        // $9228  
-    cmp #$ef                                    // $922a  
-    bcc level_5_door_visible                    // $922c  
-do_level_5_door_logic_return:
-    rts                                         // $922e  
-level_5_door_visible:
-    lda door_switch_counter_A                   // $922f  
-    cmp #$12                                    // $9231  max opening $12
-    bcs level_5_door_closing                    // $9233  
-    sta door_switch_counter_B                   // $9235  
-    jmp level_5_door_draw                       // $9237  
-level_5_door_closing:
-    lda door_switch_counter_B                   // $923a  
-    cmp #$12                                    // $923c  
-    bcs level_5_door_draw                       // $923e  
-    inc door_switch_counter_B                   // $9240  
-level_5_door_draw:
-    sec                                         // $9242  
-    lda #$c0                                    // $9243  diamond door: wall X = $C0 - opening
-    sbc door_switch_counter_B                   // $9245  
-    pha                                         // $9247  
-    lda door_screen_ypos                        // $9248  
-    clc                                         // $924a  
-    adc terrain_window_y_index                  // $924b  
-    tay                                         // $924e  
-    pla                                         // $924f  
-    clc                                         // $9250  
-    ldx #$07                                    // $9251  7 rows sloping right
-level_5_door_draw_top:
-    sta terrain_left_wall,y                     // $9253  
-    adc #$01                                    // $9256  
-    iny                                         // $9258  
-    dex                                         // $9259  
-    bne level_5_door_draw_top                   // $925a  
-    sec                                         // $925c  
-    ldx #$08                                    // $925d  8 rows sloping back
-level_5_door_draw_bottom:
-    sta terrain_left_wall,y                     // $925f  
-    sbc #$01                                    // $9262  
-    iny                                         // $9264  
-    dex                                         // $9265  
-    bne level_5_door_draw_bottom                // $9266  
-    rts                                         // $9268  
+    ldx level_number                            // doors are table driven: level_door_* in level_tables.asm
+    lda level_door_rows,x
+    beq door_hidden                       // 0 rows: no door on this level
+    sta door_rows
+    sec
+    lda level_door_top_LO,x                     // door top: world Y
+    sbc window_ypos_INT
+    sta door_screen_ypos
+    lda level_door_top_HI,x
+    sbc window_ypos_EXT
+    bne door_hidden
+    lda #$fe                                    // on screen if door_screen_ypos < $fe - rows
+    sec
+    sbc door_rows
+    cmp door_screen_ypos
+    bcc door_hidden
+    beq door_hidden
+    lda door_switch_counter_A                   // door open amount follows the switch counter,
+    cmp level_door_max,x
+    bcs door_opening
+    sta door_switch_counter_B
+    jmp door_draw
+door_hidden:
+    rts
+door_opening:
+    lda door_switch_counter_B                   // opening: one row/step per tick up to the max
+    cmp level_door_max,x
+    bcs door_draw
+    inc door_switch_counter_B
+door_draw:
+    lda level_door_shape_LO,x                   // closed wall X per row
+    sta door_shape_load+1
+    lda level_door_shape_HI,x
+    sta door_shape_load+2
+    lda level_door_open_x,x
+    sta door_open_x
+    lda level_door_mode,x                       // bit7: right wall, bit6: reveal (else slide)
+    sta door_mode
+    ldy #>terrain_left_wall
+    asl
+    bcc door_left_wall
+    ldy #>terrain_right_wall
+door_left_wall:
+    sty door_wall_store+2
+    lda door_screen_ypos                        // wall array row of the door top
+    clc
+    adc terrain_window_y_index
+    tay
+    ldx #$00
+door_row_loop:
+door_shape_load:
+    lda $ffff,x                                 // SELF-MODIFIED: level_N_door_x
+    bit door_mode
+    bvs door_reveal
+    bmi door_slide_right
+    sec                                         // slide, left wall: X = shape - opening
+    sbc door_switch_counter_B
+    jmp door_store
+door_slide_right:
+    clc                                         // slide, right wall: X = shape + opening
+    adc door_switch_counter_B
+    jmp door_store
+door_reveal:
+    cpx door_switch_counter_B                   // reveal: the top <opening> rows use door_open_x
+    bcs door_store
+    lda door_open_x
+door_store:
+door_wall_store:
+    sta terrain_left_wall,y                     // SELF-MODIFIED: terrain_left_wall / terrain_right_wall
+    iny
+    inx
+    cpx door_rows
+    bne door_row_loop
+door_logic_return:
+    rts
+door_rows:
+    .byte $00
+door_mode:
+    .byte $00
+door_open_x:
+    .byte $00
 lose_a_life:
     lda lives                                   // $9269  
     sec                                         // $926c  
@@ -6138,6 +6073,7 @@ start_new_game:
     stx planet_destroyed_hostile_gun_modifier   // $b04f  set planet_destroyed_hostile_gun_modifier to 0
     stx reverse_gravity_msg_shown               // $b052  set reverse_gravity_msg_shown to 0
     stx invisible_landscape_msg_shown           // $b055  set invisible_landscape_msg_shown to 0
+    stx round_index                             //        first round of the round cycle
     ldx #$03                                    // $b058  
 zero_fuel_and_score:
     lda #$00                                    // $b05a  
@@ -6180,6 +6116,48 @@ store_32_loop:
     lda #$ff                                    // $b0b1  
     sta title_shown_flag                        // $b0b3  
     jmp high_score_start                        // $b0b6  
+// Set reverse_gravity_flag / invisible_landscape_flag ($00/$ff) for level_number:
+// the round cycle entry (round_cycle_*) modified by the level rule (level_rule_*).
+apply_level_rules:
+    ldy level_number
+    ldx round_index
+    lda level_rule_reverse,y
+    sta rule_tmp
+    lda round_cycle_reverse,x
+    jsr apply_rule
+    sta reverse_gravity_flag
+    lda level_rule_invisible,y
+    sta rule_tmp
+    lda round_cycle_invisible,x
+    jsr apply_rule
+    sta invisible_landscape_flag
+    rts
+// A = round flag, rule_tmp = rule: 0 follow round, 1 on, 2 off, 3 invert round
+apply_rule:
+    pha
+    lda rule_tmp
+    beq rule_round
+    cmp #$02
+    beq rule_off
+    bcs rule_invert
+    pla                                         // 1: on
+    lda #$ff
+    rts
+rule_off:
+    pla
+    lda #$00
+    rts
+rule_invert:
+    pla
+    eor #$ff
+    rts
+rule_round:
+    pla
+    rts
+rule_tmp:
+    .byte $00
+round_index:
+    .byte $00                                   // index into round_cycle_*, advanced when all levels are done
 start_new_level:
     jsr clear_screen_and_sprites                // $b0b9  
     jsr set_text_screen_colours                 // $b0bc  
@@ -6190,16 +6168,18 @@ start_new_level:
     inc level_number                            // $b0c7  
     lda level_number                            // $b0ca  
     cmp #$06                                    // $b0cd  NUMBER OF LEVELS - all per-level tables have 6 entries
-    bne setup_next_mission                      // $b0cf  
+    bne setup_level_rules                       // $b0cf  
     lda #$00                                    // $b0d1  
     sta level_number                            // $b0d3  reset level number to 0
-    lda reverse_gravity_flag                    // $b0d6  
-    eor #$ff                                    // $b0d9  
-    sta reverse_gravity_flag                    // $b0db  invert flag
-    bne setup_reverse_gravity                   // $b0de  
-    lda invisible_landscape_flag                // $b0e0  
-    eor #$ff                                    // $b0e2  
-    sta invisible_landscape_flag                // $b0e4  invert lower 4 bits of flag
+    ldx round_index                             //        next round of the round cycle
+    inx
+    cpx #round_cycle_invisible - round_cycle_reverse
+    bcc next_round
+    ldx #$00
+next_round:
+    stx round_index
+setup_level_rules:
+    jsr apply_level_rules
 setup_reverse_gravity:
     lda reverse_gravity_flag                    // $b0e6  
     beq setup_invisible_landscape               // $b0e9  
@@ -7442,7 +7422,7 @@ status_charset_data:
 // ----------------------------------------------------------------------------
 // thrusty-levels: title screen text (high score table, music playing).
 // "Press SPACE BAR to start." moved down 2 rows (row 16 -> 18, its first two
-// bytes in tab_0900) to make room for the title on row 16.
+// bytes in tab_0900) to make room for the title lines on rows 15 and 16.
 // Messages: <bitmap address>, ASCII text, $FF. Bitmap $6000, 40x25 cells.
 // ----------------------------------------------------------------------------
 .function text_pos(row, col) { .return $6000 + row * 320 + col * 8 }
@@ -7488,12 +7468,20 @@ write_title_press_space_blank:
     lda #>msg_title
     sta plot_string_ptr+1
     ldx #<msg_title
+    jsr write_message
+    lda #$0f                                    // light grey (write_message shifted font_byte_mask)
+    sta font_byte_mask
+    lda #>msg_author
+    sta plot_string_ptr+1
+    ldx #<msg_author
     jmp write_message
-msg_title:
-    .byte <text_pos(16, 10), >text_pos(16, 10)
-    .encoding "ascii"
-    .text "SUPER THRUSTY MAKER"
-    .byte $ff
+// msg_title (the game's name, row 15) and msg_author ("BY ...", row 16) are
+// in level_tables.asm, where the level editor writes them; their positions
+// (centred) and length checks are here, so saved games do not carry them.
+.label title_pos = text_pos(15, floor((40 - (msg_title_end - msg_title_text)) / 2))
+.label author_pos = text_pos(16, floor((40 - (msg_author_end - msg_author_text)) / 2))
+.errorif msg_title_end - msg_title_text > 28, "msg_title_text: the title is " + (msg_title_end - msg_title_text) + " characters, the limit is 28"
+.errorif msg_author_end - msg_author_text > 28, "msg_author_text: the author line is " + (msg_author_end - msg_author_text) + " characters, the limit is 28"
 }
 
 // ============================================================================

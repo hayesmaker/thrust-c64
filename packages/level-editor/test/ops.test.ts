@@ -115,3 +115,18 @@ describe('restart ops', () => {
     expect(deleteRestart(l, 0)).toBe(false);
   });
 });
+
+import { fillDoor } from '../src/editor/ops';
+
+describe('door ops', () => {
+  it('fill passage: rows meet the other wall, a slide door opens back to its own wall', () => {
+    const l = level(0);
+    const d = decodeLevel(l, 0x400);
+    const top = 0x240;
+    l.door = { side: 'right', top, mode: 'slide', rows: [0x80, 0x80, 0x80], max: 4, openX: 0, time: 0xff };
+    expect(fillDoor(l, d)).toBe(true);
+    l.door.rows.forEach((x, k) => expect(x).toBe(d.left[top + k] - 1));
+    expect(l.door.max).toBe(Math.max(...l.door.rows.map((x, k) => d.right[top + k] - x)));
+    expect(fillDoor(l, d)).toBe(false);
+  });
+});

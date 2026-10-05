@@ -56,7 +56,7 @@ describe('game files', () => {
     a.setLevel(3);
     const file = JSON.parse(JSON.stringify(a.toJSON()));
     expect(file.format).toBe(GAME_FORMAT);
-    expect(file.version).toBe(1);
+    expect(file.version).toBe(2);
     const b = new Store();
     b.fromJSON(file, 'big-caves.json');
     expect(b.name).toBe('Big caves');
@@ -72,6 +72,48 @@ describe('game files', () => {
     const s = new Store();
     s.fromJSON({ ...old, sourceName: 'packages/thrusty-levels/src' }, 'old-levels.json');
     expect(s.name).toBe('old-levels');
+  });
+
+  it('opens version 1 games (no doors or rules in the file or its sources)', () => {
+    const v1 = {
+      format: GAME_FORMAT,
+      version: 1,
+      name: 'v1',
+      levelsAsm: read('src/levels.asm'),
+      tablesAsm: read('src/level_tables.asm'),
+      levels: loadProject(read('src/levels.asm'), read('src/level_tables.asm')).levels.map(({ door, rules, ...l }) => (void door, void rules, l)),
+    };
+    const s = new Store();
+    s.fromJSON(v1 as never, 'v1.json');
+    expect(s.project!.levels[3].door?.rows).toHaveLength(13);
+    expect(s.project!.levels[0].door).toBeNull();
+    expect(s.project!.levels[0].rules.reverse).toBe('round');
+    expect(s.project!.roundCycle).toHaveLength(4);
+    expect(s.project!.tablesAsm).toContain('level_door_rows:');
+    expect(s.toJSON().version).toBe(2);
+  });
+
+  it('the author is saved with the game and makes it dirty', () => {
+    const a = template();
+    a.markSaved('a.json');
+    a.setAuthor('Andy');
+    expect(a.dirty).toBe(true);
+    const b = new Store();
+    b.fromJSON(JSON.parse(JSON.stringify(a.toJSON())), 'a.json');
+    expect(b.author).toBe('Andy');
+    expect(b.dirty).toBe(false);
+  });
+
+  it('round cycle edits are undoable and make the game dirty', () => {
+    const s = template();
+    s.markSaved('a.json');
+    s.checkpoint();
+    s.project!.roundCycle = [{ reverse: true, invisible: true }];
+    s.changed();
+    expect(s.dirty).toBe(true);
+    s.undo();
+    expect(s.project!.roundCycle).toHaveLength(4);
+    expect(s.dirty).toBe(false);
   });
 
   it('refuses files that are not games', () => {

@@ -1,6 +1,7 @@
 // Editing operations with the format's constraints. Walls: points[0] is the
 // fixed anchor, rows strictly increase, X and rows are whole.
 
+import { type Door, MAX_DOOR_ROWS, newDoor } from '../model/door';
 import { type Level, type LevelObject, ObjType, type RestartPoint, type Wall, touchWall } from '../model/level';
 import { isGun, snapObject } from '../model/objects';
 import { ANCHOR_ROW } from '../model/terrain';
@@ -170,3 +171,94 @@ export function deleteRestart(l: Level, i: number): boolean {
   l.restarts.splice(i, 1);
   return true;
 }
+
+// ---- doors ---------------------------------------------------------------------
+
+/** A door at `top` on a wall: `rows` rows, closed `depth` X units out from the
+ *  terrain (`decoded` wall X per row). */
+export function createDoor(l: Level, side: Door['side'], top: number, rows: number, depth: number, decoded: { left: number[]; right: number[] }): void {
+  top = Math.max(0, Math.round(top));
+  const wall = decoded[side];
+  const xs = Array.from({ length: Math.max(1, Math.min(MAX_DOOR_ROWS, rows)) }, (_, k) => {
+    const w = wall[Math.min(top + k, wall.length - 1)] ?? 0x80;
+    return clampByte(side === 'left' ? w + depth : w - depth);
+  });
+  l.door = { ...newDoor(side, top, xs), max: depth };
+}
+
+/** Move door row i to wall X `x`. */
+export function moveDoorRow(l: Level, i: number, x: number): boolean {
+  const d = l.door;
+  if (!d || i < 0 || i >= d.rows.length) return false;
+  x = clampByte(x);
+  if (d.rows[i] === x) return false;
+  d.rows[i] = x;
+  return true;
+}
+
+/** Move the whole door: top row to `top`, every row `dx` X units. */
+export function moveDoor(l: Level, top: number, dx: number): boolean {
+  const d = l.door;
+  if (!d) return false;
+  top = Math.max(0, Math.min(0xffff, Math.round(top)));
+  dx = Math.round(dx);
+  if (top === d.top && dx === 0) return false;
+  d.top = top;
+  if (dx) d.rows = d.rows.map((x) => clampByte(x + dx));
+  return true;
+}
+
+export function deleteDoor(l: Level): boolean {
+  if (!l.door) return false;
+  l.door = null;
+  return true;
+}
+
+/** Remove door row i (the last row cannot be removed: delete the door). */
+export function deleteDoorRow(l: Level, i: number): boolean {
+  const d = l.door;
+  if (!d || d.rows.length <= 1 || i < 0 || i >= d.rows.length) return false;
+  d.rows.splice(i, 1);
+  if (d.mode === 'reveal') d.max = Math.min(d.max, d.rows.length);
+  return true;
+}
+
+/** Add a row below the door (a copy of the last row). */
+export function addDoorRow(l: Level): boolean {
+  const d = l.door;
+  if (!d || d.rows.length >= MAX_DOOR_ROWS) return false;
+  d.rows.push(d.rows[d.rows.length - 1]);
+  return true;
+}
+
+/** Set every row's closed X to the terrain wall plus `depth` (re-trace). */
+export function traceDoor(l: Level, depth: number, decoded: { left: number[]; right: number[] }): boolean {
+  const d = l.door;
+  if (!d) return false;
+  const wall = decoded[d.side];
+  const before = d.rows.join();
+  d.rows = d.rows.map((_, k) => {
+    const w = wall[Math.min(d.top + k, wall.length - 1)] ?? 0x80;
+    return clampByte(d.side === 'left' ? w + depth : w - depth);
+  });
+  return d.rows.join() !== before;
+}
+
+/** Close the passage: every row's closed edge meets the opposite wall, and a
+ *  slide door opens far enough to clear it (back to its own wall). */
+export function fillDoor(l: Level, decoded: { left: number[]; right: number[] }): boolean {
+  const d = l.door;
+  if (!d) return false;
+  const at = (a: number[], row: number) => a[Math.min(row, a.length - 1)] ?? 0x80;
+  const other = d.side === 'left' ? decoded.right : decoded.left;
+  const own = decoded[d.side];
+  const before = JSON.stringify(d);
+  // left door: rock is X < door X, the cave ends at the right wall X (open up to
+  // and including it); right door: rock is X > door X, the cave starts at left wall X
+  d.rows = d.rows.map((_, k) => clampByte(d.side === 'left' ? at(other, d.top + k) + 1 : at(other, d.top + k) - 1));
+  if (d.mode === 'slide')
+    d.max = clampByte(Math.max(...d.rows.map((x, k) => Math.abs(x - at(own, d.top + k)))));
+  return JSON.stringify(d) !== before;
+}
+
+const clampByte = (v: number) => Math.max(0, Math.min(0xff, Math.round(v)));

@@ -16,11 +16,13 @@ import {
 } from '../model/level';
 import { ANGLE_NAMES, GUN_SPREAD, gunArc, gunBase, gunParam, gunSpread, isGun, snapObject } from '../model/objects';
 import { pointsToRuns, segmentSteps } from '../model/terrain';
+import { AUTHOR_MAX, TITLE_MAX, authorText, fontText, fontTyping, titleText } from '../model/title';
 import { type MemState, levelBytes, memoryAreas, memoryIssues, validateLevel, worstState } from '../model/validate';
 import { type BuildError, type BuildResult, type Source, build, buildFileUrl, fetchBuildFile, getSource } from './api';
 import { download, terrainAsm } from './export';
 import { confirmDiscard, forgetFile, openGameFile, pickGameFile, saveGame } from './files';
 import { swatchColour } from './look';
+import { DOOR_HTML, RULES_HTML, mountDoorRules } from './door-panel';
 import { deleteSelection } from './input';
 import { addObject, addRestart, centreWindow, movePoint, reorderObject, sortObjects } from './ops';
 import { type PlayerOverlay } from './player';
@@ -57,7 +59,9 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     </header>
     <section>
       <h2>Game</h2>
-      <label>name <input type="text" id="p-game-name" spellcheck="false" maxlength="80"></label>
+      <label>name <input type="text" id="p-game-name" spellcheck="false" maxlength="${TITLE_MAX}"></label>
+      <label>author <input type="text" id="p-game-author" spellcheck="false" maxlength="${AUTHOR_MAX}" placeholder="shown as BY …"></label>
+      <div class="small muted" id="p-game-title"></div>
       <div class="small" id="p-game-file"></div>
       <div class="row">
         <button id="p-save" class="primary" title="Ctrl+S">Save</button>
@@ -112,12 +116,14 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       <ol class="list" id="p-restarts" start="0"></ol>
       <div class="row"><button id="p-add-restart">Add restart point</button></div>
     </details>
+    ${DOOR_HTML}
     <details>
       <summary>Gravity and colours</summary>
       <label class="inline">gravity <input type="number" id="p-gravity" min="0" max="255"> <span class="muted" id="p-gravity-hex"></span></label>
       <div class="muted small">Original levels: 5, 7, 9, 11, 12, 13 (bigger = stronger).</div>
       <div id="p-colours"></div>
     </details>
+    ${RULES_HTML}
     <details>
       <summary>Terrain tables</summary>
       <div id="p-tables"></div>
@@ -151,6 +157,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         <dt>click a wall line</dt><dd>add a point</dd>
         <dt>drag object</dt><dd>move, snaps to terrain (Alt: free)</dd>
         <dt>drag restart cross</dt><dd>move ship start + window</dd>
+        <dt>drag door tab / row dot</dt><dd>move door / one row (Shift: all rows)</dd>
         <dt>right-click / Del</dt><dd>delete</dd>
         <dt>arrows</dt><dd>nudge (Shift: ×8)</dd>
         <dt>drag / wheel</dt><dd>pan</dd>
@@ -171,6 +178,8 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     else if (terrain) store.terrainChanged();
     else store.changed();
   };
+
+  const updateDoorRules = mountDoorRules(root, store, view, edit);
 
   // ---- header + level
   const levelBox = $('p-levels');
@@ -247,7 +256,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     if (!li) return;
     const kind = li.dataset.kind;
     const i = Number(li.dataset.i);
-    if (kind === 'object' || kind === 'restart') {
+    if (kind === 'object' || kind === 'restart' || kind === 'door') {
       store.selection = { kind, index: i };
       store.changed(false);
     }
@@ -282,17 +291,44 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       toast('Clipboard blocked: downloaded instead');
     }
   };
-  const saved = () => saveProject(store.project!);
+  const saved = () => saveProject(store.project!, { title: store.name, author: store.author });
   $('p-dl-levels').onclick = () => store.project && download('levels.asm', saved().levelsAsm);
   $('p-dl-tables').onclick = () => store.project && download('level_tables.asm', saved().tablesAsm);
 
   // ---- game files
   const nameInput = $<HTMLInputElement>('p-game-name');
-  nameInput.onchange = () => {
-    const name = nameInput.value.trim();
-    if (name && name !== store.name) store.setName(name);
-    else nameInput.value = store.name;
+  const authorInput = $<HTMLInputElement>('p-game-author');
+  const showTitle = (name: string, author: string) => {
+    const a = authorText(author);
+    $('p-game-title').textContent = `title screen: ${titleText(name)}${a ? ` / ${a}` : ''}`;
   };
+  /** Keep a box to what the title screen font can show (upper case), and
+   *  return its text. Keeps the caret where it was. */
+  const fontBox = (input: HTMLInputElement, max: number): string => {
+    const v = input.value;
+    const caret = input.selectionStart ?? v.length;
+    const next = fontTyping(v, max);
+    if (next !== v) {
+      const at = fontTyping(v.slice(0, caret), max).length;
+      input.value = next;
+      input.setSelectionRange(at, at);
+    }
+    return next.trim();
+  };
+  // stored on every keystroke, so a shortcut (Ctrl+Enter, Ctrl+S) typed in
+  // the box uses what is there
+  nameInput.oninput = () => {
+    const name = fontBox(nameInput, TITLE_MAX);
+    if (name && name !== store.name) store.setName(name);
+    showTitle(name, store.author);
+  };
+  authorInput.oninput = () => {
+    const author = fontBox(authorInput, AUTHOR_MAX);
+    if (author !== store.author) store.setAuthor(author);
+    showTitle(store.name, author);
+  };
+  nameInput.onchange = () => (nameInput.value = fontText(store.name, TITLE_MAX) || store.name);
+  authorInput.onchange = () => (authorInput.value = fontText(store.author, AUTHOR_MAX));
   const save = async (as: boolean) => {
     try {
       const f = await saveGame(store, as);
@@ -382,7 +418,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     building = true;
     const levelNo = store.level;
     const startHere = $<HTMLInputElement>('p-start-here').checked;
-    const out = saveProject(p);
+    const out = saveProject(p, { title: store.name, author: store.author });
     buildStatus.className = 'small muted';
     buildStatus.textContent = 'building…';
     if (player.isOpen) player.setStatus('building…');
@@ -467,7 +503,9 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
         ? !!l[sel.side].points[sel.index]
         : sel.kind === 'object'
           ? !!l.objects[sel.index]
-          : !!l.restarts[sel.index]);
+          : sel.kind === 'door'
+            ? !!l.door && sel.index < l.door.rows.length
+            : !!l.restarts[sel.index]);
     if (!sel || !l || !valid) {
       selKey = '';
       $('p-sel-title').textContent = 'Selection';
@@ -506,6 +544,35 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       setVal('s-x', p.x & 0xff);
       const prev = w.points[sel.index - 1];
       $('s-info').innerHTML = `row ${hex3(p.row)}, X ${hex2(p.x)}<br>` + describeSegment(prev.row, prev.x, p.row, p.x);
+      return;
+    }
+
+    if (sel.kind === 'door') {
+      const d = l.door!;
+      if (key !== selKey) {
+        selKey = key;
+        $('p-sel-title').textContent = sel.index < 0 ? 'Door' : `Door row ${sel.index}`;
+        selBox.innerHTML =
+          sel.index < 0
+            ? `<div class="muted">Drag the tab to move the door (Shift: sideways only); arrows nudge it. Edit it under Door below.</div>
+               <div class="row"><button id="s-ddel">Delete door</button></div>`
+            : `<label>closed X <input type="number" id="s-dx" min="0" max="255"></label>
+               <div class="muted" id="s-dinfo"></div>
+               <div class="row"><button id="s-ddel">Delete row</button></div>`;
+        $('s-ddel').onclick = () => deleteSelection(store);
+        if (sel.index >= 0)
+          num('s-dx').onchange = () =>
+            edit((l2) => {
+              if (!l2.door) return false;
+              const x = Math.max(0, Math.min(255, Number(num('s-dx').value) | 0));
+              if (l2.door.rows[sel.index] === x) return false;
+              l2.door.rows[sel.index] = x;
+            });
+      }
+      if (sel.index >= 0) {
+        setVal('s-dx', d.rows[sel.index]);
+        $('s-dinfo').textContent = `row ${hex3(d.top + sel.index)}, closed X ${hex2(d.rows[sel.index])}`;
+      }
       return;
     }
 
@@ -669,14 +736,16 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   }
 
   function renderChecks(l: Level) {
-    const issues = [...memoryIssues(memoryAreas(store.project!.levels, store.layout), l.index), ...validateLevel(l)];
+    const p = store.project!;
+    const issues = [...memoryIssues(memoryAreas(p.levels, store.layout, p.roundCycle.length), l.index), ...validateLevel(l)];
     const bad = issues.filter((i) => i.severity !== 'info').length;
     $('p-check-count').innerHTML = bad ? `<span class="warn">(${bad})</span>` : '<span class="ok">✓</span>';
     $('p-checks').innerHTML =
       issues
         .map((i) => {
           const t = i.target;
-          const data = t && t.kind !== 'wall' ? `data-kind="${t.kind}" data-i="${t.index}"` : '';
+          const data =
+            t?.kind === 'door' ? 'data-kind="door" data-i="-1"' : t && t.kind !== 'wall' ? `data-kind="${t.kind}" data-i="${t.index}"` : '';
           return `<li class="${i.severity}" ${data}>${esc(i.message)}</li>`;
         })
         .join('') || '<li class="ok">No problems found.</li>';
@@ -684,7 +753,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
 
   let lastMemState: MemState = 'ok';
   function renderMemory(l: Level) {
-    const areas = memoryAreas(store.project!.levels, store.layout);
+    const areas = memoryAreas(store.project!.levels, store.layout, store.project!.roundCycle.length);
     const b = levelBytes(l);
     $('p-memory').innerHTML =
       areas
@@ -736,7 +805,9 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   function update() {
     const p = store.project;
     const l = store.current;
-    if (document.activeElement !== nameInput) nameInput.value = store.name;
+    if (document.activeElement !== nameInput) nameInput.value = fontText(store.name, TITLE_MAX) || store.name;
+    if (document.activeElement !== authorInput) authorInput.value = fontText(store.author, AUTHOR_MAX);
+    if (document.activeElement !== nameInput && document.activeElement !== authorInput) showTitle(store.name, store.author);
     const file = store.fileName ?? 'not saved yet';
     $('p-game-file').innerHTML = !p
       ? '<span class="muted">no game loaded</span>'
@@ -752,6 +823,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     $('p-gravity-hex').textContent = hex2(l.gravity);
     for (const b of colourBox.querySelectorAll<HTMLElement>('button[data-key]'))
       b.classList.toggle('active', l.colours[b.dataset.key as (typeof COLOUR_KEYS)[number]] === Number(b.dataset.c));
+    updateDoorRules(l);
     renderMemory(l);
     renderChecks(l);
     renderLists(l);

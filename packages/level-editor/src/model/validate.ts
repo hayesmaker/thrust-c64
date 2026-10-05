@@ -1,5 +1,6 @@
 // Level checks (rules from docs/level_format.md) and the memory budget.
 
+import { MAX_DOOR_ROWS, doorWallX } from './door';
 import { type Level, OBJ_NAMES, ObjType, decodeLevel, levelRows, wallTables } from './level';
 import { isSolid, snapObject } from './objects';
 
@@ -8,7 +9,8 @@ export type Severity = 'error' | 'warn' | 'info';
 export type Target =
   | { kind: 'object'; index: number }
   | { kind: 'restart'; index: number }
-  | { kind: 'wall'; side: 'left' | 'right' };
+  | { kind: 'wall'; side: 'left' | 'right' }
+  | { kind: 'door' };
 
 export interface Issue {
   level: number;
@@ -20,16 +22,6 @@ export interface Issue {
 export const MAX_OBJECTS = 32;
 export const FUEL_SLOTS = 12;
 export const MAX_ENTRIES = 255;
-
-/** Doors are code (tick_door_logic), not data: top row and rows per level. */
-export const DOORS: Record<number, { top: number; xs: number[] }> = {
-  3: { top: 0x269, xs: new Array(13).fill(0xae) },
-  4: { top: 0x344, xs: new Array(21).fill(0xa6) },
-  5: {
-    top: 0x370,
-    xs: [...Array.from({ length: 7 }, (_, k) => 0xc0 + k), ...Array.from({ length: 8 }, (_, k) => 0xc7 - k)],
-  },
-};
 
 export function validateLevel(l: Level): Issue[] {
   const out: Issue[] = [];
@@ -74,8 +66,31 @@ export function validateLevel(l: Level): Issue[] {
   const last = left.length - 1;
   if (left[last] < right[last]) add('warn', 'the cave is open at the bottom (the walls never meet)');
 
-  if (DOORS[l.index])
-    add('info', `level ${l.index} has a hard-coded door at row $${DOORS[l.index].top.toString(16)} (orange): keep the left wall there`);
+  // door
+  const d = l.door;
+  const switches = o.filter((v) => v.type === ObjType.SwitchLeft || v.type === ObjType.SwitchRight).length;
+  if (d) {
+    const t: Target = { kind: 'door' };
+    const n = d.rows.length;
+    if (n === 0) add('error', 'the door has no rows', t);
+    if (n > MAX_DOOR_ROWS) add('error', `the door has ${n} rows (max ${MAX_DOOR_ROWS})`, t);
+    if (d.top + n > 0xffff) add('error', 'the door is below the bottom of the world', t);
+    if (d.mode === 'reveal' && d.max > n) add('error', `the door opens ${d.max} rows but has only ${n}`, t);
+    if (d.mode === 'slide')
+      d.rows.forEach((x, k) => {
+        const open = d.side === 'left' ? x - d.max : x + d.max;
+        if (open < 0 || open > 0xff) add('error', `door row ${k}: opening ${d.max} takes X past ${d.side === 'left' ? 0 : 255}`, t);
+      });
+    if (!switches) add('warn', 'the door has no door switch (object 7 or 8) to open it', t);
+    if (d.time < d.max) add('warn', `the door's open time (${d.time}) is shorter than its opening (${d.max}): it never opens fully`, t);
+    // closed, a door may shut the passage; fully open it must leave a gap
+    const other = d.side === 'left' ? right : left;
+    const at = (a: number[], row: number) => a[Math.min(row, a.length - 1)];
+    const blocked = doorWallX(d, d.max).findIndex((x, k) =>
+      d.side === 'left' ? x >= at(other, d.top + k) : x <= at(other, d.top + k),
+    );
+    if (blocked >= 0) add('warn', `door row ${blocked} still reaches the ${d.side === 'left' ? 'right' : 'left'} wall when fully open`, t);
+  } else if (switches) add('info', `${switches} door switch${switches > 1 ? 'es' : ''} but no door: they do nothing`);
   if (o.some((v) => v.gun & 0xe0)) add('info', 'some gun parameters use bits 5-7 (ignored by the game)');
   return out;
 }
@@ -111,12 +126,19 @@ export interface MemArea {
   state: MemState;
 }
 
-export function levelBytes(l: Level): { terrain: number; objects: number; restarts: number; total: number } {
+export function levelBytes(l: Level): { terrain: number; objects: number; restarts: number; door: number; total: number } {
   const terrain = 2 * (wallTables(l.left).counts.length + wallTables(l.right).counts.length);
   const objects = 5 * l.objects.length + 1;
   const restarts = 6 * l.restarts.length;
-  return { terrain, objects, restarts, total: terrain + objects + restarts };
+  // level_N_door_x in levels.asm: one byte per row, one placeholder without a door
+  const door = Math.max(1, l.door?.rows.length ?? 0);
+  return { terrain, objects, restarts, door, total: terrain + objects + restarts + door };
 }
+
+/** Main block bytes used by the door / rule code and tables in the mod (with
+ *  the original 4-round cycle); each further round costs 2 bytes. */
+export const DOOR_RULE_MAIN_BYTES = 61;
+export const ORIGINAL_ROUNDS = 4;
 
 const area = (id: MemArea['id'], label: string, used: number, budget: number): MemArea => {
   const free = budget - used;
@@ -125,16 +147,17 @@ const area = (id: MemArea['id'], label: string, used: number, budget: number): M
 };
 
 /** Where the level data goes and roughly how full each place is. */
-export function memoryAreas(levels: Level[], layout: Layout | null): MemArea[] {
+export function memoryAreas(levels: Level[], layout: Layout | null, rounds = ORIGINAL_ROUNDS): MemArea[] {
   const sum = (f: (b: ReturnType<typeof levelBytes>) => number) => levels.reduce((n, l) => n + f(levelBytes(l)), 0);
   const la = layout?.levelsArea;
   if (!la) return [area('main', 'level data (main block, ends below $C000)', sum((b) => b.total), LEVEL_BUDGET)];
   const hex = (v: number) => '$' + v.toString(16).toUpperCase();
   return [
-    area('levels', `terrain + objects (levels area ${hex(la.start)}-${hex(la.end - 1)})`, sum((b) => b.terrain + b.objects), la.end - la.start),
-    // the main block keeps its free bytes plus the 790 that levels.asm used to take
-    area('main', 'restart points (main block, ends below $C000)', sum((b) => b.restarts),
-      ORIGINAL_RESTART_BYTES + FREE_MAIN_BYTES + ORIGINAL_LEVELS_ASM_BYTES),
+    area('levels', `terrain + objects + doors (levels area ${hex(la.start)}-${hex(la.end - 1)})`, sum((b) => b.terrain + b.objects + b.door), la.end - la.start),
+    // the main block keeps its free bytes plus the 790 that levels.asm used to
+    // take, less the door / rule code
+    area('main', 'restart points + round cycle (main block, ends below $C000)', sum((b) => b.restarts) + 2 * (rounds - ORIGINAL_ROUNDS),
+      ORIGINAL_RESTART_BYTES + FREE_MAIN_BYTES + ORIGINAL_LEVELS_ASM_BYTES - DOOR_RULE_MAIN_BYTES),
   ];
 }
 

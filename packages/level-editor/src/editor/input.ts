@@ -5,12 +5,26 @@
 //   click/drag on a line  insert a point there
 //   drag object           move it; it snaps to the terrain (Alt: free)
 //   drag restart cross    move the ship start; its screen window follows
+//   drag door tab         move the door (Shift: sideways only)
+//   drag door row handle  move that row's closed edge (Shift: all rows)
 //   right-click / Del     delete what is under the mouse / selected
 //   drag empty space      pan            wheel: scroll, Ctrl+wheel: zoom
 //   arrows                nudge selected (Shift: x8)
 //   Ctrl+Z / Ctrl+Shift+Z undo / redo    F: fit level   1-6: level
 
-import { deleteObject, deletePoint, deleteRestart, insertPoint, moveObject, movePoint, moveRestart } from './ops';
+import {
+  deleteDoor,
+  deleteDoorRow,
+  deleteObject,
+  deletePoint,
+  deleteRestart,
+  insertPoint,
+  moveDoor,
+  moveDoorRow,
+  moveObject,
+  movePoint,
+  moveRestart,
+} from './ops';
 import { type Selection, type Store, sameSelection } from './store';
 import { type View } from './view';
 
@@ -18,6 +32,7 @@ type Drag =
   | { kind: 'point'; side: 'left' | 'right'; index: number; tile: number }
   | { kind: 'object'; index: number; tile: number; grabX: number; grabY: number }
   | { kind: 'restart'; index: number; tile: number }
+  | { kind: 'door'; index: number; tile: number; startX: number; startRow: number; top: number; rows: number[] }
   | { kind: 'pan'; lastX: number; lastY: number; moved: boolean };
 
 /** Delete the selected point/object/restart point. */
@@ -31,7 +46,11 @@ export function deleteSelection(store: Store): void {
       ? deletePoint(l[sel.side], sel.index)
       : sel.kind === 'object'
         ? deleteObject(l, sel.index)
-        : deleteRestart(l, sel.index);
+        : sel.kind === 'door'
+          ? sel.index < 0
+            ? deleteDoor(l)
+            : deleteDoorRow(l, sel.index)
+          : deleteRestart(l, sel.index);
   if (!ok) return store.cancelCheckpointIfUnchanged();
   store.selection = null;
   if (sel.kind === 'point') store.terrainChanged();
@@ -52,6 +71,10 @@ export function nudgeSelection(store: Store, dx: number, dr: number, snap: boole
     const o = l.objects[sel.index];
     // snapping would undo a vertical nudge of a floor object, so nudge freely
     ok = moveObject(l, sel.index, o.x + dx, o.y + dr, snap && dr === 0 && dx !== 0, store.decoded);
+  } else if (sel.kind === 'door') {
+    const d = l.door;
+    if (d && sel.index >= 0) ok = (dx !== 0 && moveDoorRow(l, sel.index, d.rows[sel.index] + dx)) || (dr !== 0 && moveDoor(l, d.top + dr, 0));
+    else if (d) ok = moveDoor(l, d.top + dr, dx);
   } else {
     const r = l.restarts[sel.index];
     ok = moveRestart(l, sel.index, r.shipX + dx, r.shipY + dr);
@@ -74,6 +97,8 @@ export function attachInput(view: View, store: Store): void {
   const hitAny = (x: number, y: number) => {
     const p = view.hitPoint(x, y);
     if (p) return { sel: { kind: 'point', side: p.side, index: p.index } as Selection, tile: p.tile, grab: null };
+    const d = view.hitDoor(x, y);
+    if (d) return { sel: { kind: 'door', index: d.index } as Selection, tile: d.tile, grab: null };
     const r = view.hitRestart(x, y);
     if (r) return { sel: { kind: 'restart', index: r.index } as Selection, tile: r.tile, grab: null };
     const o = view.hitObject(x, y);
@@ -107,12 +132,15 @@ export function attachInput(view: View, store: Store): void {
       store.checkpoint();
       store.selection = hit.sel;
       const s = hit.sel;
+      const w = view.toWorld(p.x, p.y);
       drag =
         s.kind === 'point'
           ? { kind: 'point', side: s.side, index: s.index, tile: hit.tile }
           : s.kind === 'object'
             ? { kind: 'object', index: s.index, tile: hit.tile, grabX: hit.grab!.x, grabY: hit.grab!.y }
-            : { kind: 'restart', index: s.index, tile: hit.tile };
+            : s.kind === 'door'
+              ? { kind: 'door', index: s.index, tile: hit.tile, startX: w.x, startRow: w.row, top: l.door!.top, rows: l.door!.rows.slice() }
+              : { kind: 'restart', index: s.index, tile: hit.tile };
       store.changed(false);
       return;
     }
@@ -146,7 +174,24 @@ export function attachInput(view: View, store: Store): void {
       else if (drag.kind === 'object') {
         const snap = store.snapObjects !== e.altKey;
         ok = moveObject(l, drag.index, w.x - drag.tile - drag.grabX, w.row - drag.grabY, snap, store.decoded);
-      } else ok = moveRestart(l, drag.index, w.x - drag.tile, w.row);
+      } else if (drag.kind === 'door' && l.door) {
+        const dx = Math.round(w.x - drag.startX);
+        const dr = Math.round(w.row - drag.startRow);
+        const before = JSON.stringify(l.door);
+        if (drag.index < 0) {
+          // the whole door; Shift: sideways only
+          l.door.rows = drag.rows.slice();
+          l.door.top = drag.top;
+          moveDoor(l, e.shiftKey ? drag.top : drag.top + dr, dx);
+        } else if (e.shiftKey) {
+          l.door.rows = drag.rows.slice();
+          moveDoor(l, l.door.top, dx);
+        } else {
+          l.door.rows = drag.rows.slice();
+          moveDoorRow(l, drag.index, drag.rows[drag.index] + dx);
+        }
+        ok = JSON.stringify(l.door) !== before;
+      } else if (drag.kind === 'restart') ok = moveRestart(l, drag.index, w.x - drag.tile, w.row);
       if (ok && drag.kind === 'point') store.terrainChanged();
       else if (ok) store.changed();
     } else {
