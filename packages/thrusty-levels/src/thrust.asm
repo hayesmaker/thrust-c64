@@ -7422,7 +7422,7 @@ status_charset_data:
 // ----------------------------------------------------------------------------
 // thrusty-levels: title screen text (high score table, music playing).
 // "Press SPACE BAR to start." moved down 2 rows (row 16 -> 18, its first two
-// bytes in tab_0900) to make room for the title on row 16.
+// bytes in tab_0900) to make room for the title lines on rows 15 and 16.
 // Messages: <bitmap address>, ASCII text, $FF. Bitmap $6000, 40x25 cells.
 // ----------------------------------------------------------------------------
 .function text_pos(row, col) { .return $6000 + row * 320 + col * 8 }
@@ -7468,12 +7468,20 @@ write_title_press_space_blank:
     lda #>msg_title
     sta plot_string_ptr+1
     ldx #<msg_title
+    jsr write_message
+    lda #$0f                                    // light grey (write_message shifted font_byte_mask)
+    sta font_byte_mask
+    lda #>msg_author
+    sta plot_string_ptr+1
+    ldx #<msg_author
     jmp write_message
-msg_title:
-    .byte <text_pos(16, 10), >text_pos(16, 10)
-    .encoding "ascii"
-    .text "SUPER THRUSTY MAKER"
-    .byte $ff
+// msg_title (the game's name, row 15) and msg_author ("BY ...", row 16) are
+// in level_tables.asm, where the level editor writes them; their positions
+// (centred) and length checks are here, so saved games do not carry them.
+.label title_pos = text_pos(15, floor((40 - (msg_title_end - msg_title_text)) / 2))
+.label author_pos = text_pos(16, floor((40 - (msg_author_end - msg_author_text)) / 2))
+.errorif msg_title_end - msg_title_text > 28, "msg_title_text: the title is " + (msg_title_end - msg_title_text) + " characters, the limit is 28"
+.errorif msg_author_end - msg_author_text > 28, "msg_author_text: the author line is " + (msg_author_end - msg_author_text) + " characters, the limit is 28"
 }
 
 // ============================================================================

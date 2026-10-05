@@ -229,3 +229,21 @@ level_gun_param_lookup:
     .word level_3_gun_param                     // $a994  
     .word level_4_gun_param                     // $a996  
     .word level_5_gun_param                     // $a998  
+// ----------------------------------------------------------------------------
+// Title screen lines (high score screen): the game's name and its author
+// ("BY ..."; a single space for none), ASCII. Positions (row 15 and 16,
+// centred) are in thrust.asm. The font has A-Z (always shown in upper case),
+// 0-9, space and '.'; anything else shows as '.'. At most 28 characters each.
+// ----------------------------------------------------------------------------
+msg_title:
+    .byte <title_pos, >title_pos
+msg_title_text:
+    .byte $53,$55,$50,$45,$52,$20,$54,$48,$52,$55,$53,$54,$59,$20,$4d,$41,$4b,$45,$52
+msg_title_end:
+    .byte $ff
+msg_author:
+    .byte <author_pos, >author_pos
+msg_author_text:
+    .byte $20
+msg_author_end:
+    .byte $ff

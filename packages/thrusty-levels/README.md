@@ -89,13 +89,30 @@ flag comes on, whichever level that is.
 
 ## Title screen
 
-The high score screen (shown while the title music plays) has a title line,
-"SUPER THRUSTY MAKER", on text row 16 under the table, in the game's own font;
+Text rows of the high score screen in the mod:
+
+| Row | Content |
+|-----|---------|
+| 0-1 | status bar |
+| 4 | "Top Eight Thrusters" (or "Congratulations") |
+| 6-13 | high score table, QR code on the left |
+| 15 | game name |
+| 16 | "BY" author |
+| 18 | "Press SPACE BAR to start." (row 16 in the original) |
+
+The high score screen (shown while the title music plays) has two title lines
+under the table, in the game's own font: the game's name from the level editor
+on text row 15 ("SUPER THRUSTY MAKER" by default) and "BY <author>" on row 16;
 "Press SPACE BAR to start." moved down from row 16 to row 18. The title
-screen code calls `write_title_screen_texts` (end of the main block, 80 bytes)
-instead of `write_press_spacebar`; change the text in `msg_title` in
-`thrust.asm`. Message positions are bitmap addresses: `text_pos(row, col)` =
-`$6000 + row * 320 + col * 8`.
+screen code calls `write_title_screen_texts` (end of the main block, 72 bytes)
+instead of `write_press_spacebar`. The texts are `msg_title_text` and
+`msg_author_text` (ASCII bytes, at most 28 each; a single space for no author)
+at the end of `level_tables.asm`, where the editor writes them. Their positions
+(`title_pos`, `author_pos`: centred by the assembler) and the length checks
+are in `thrust.asm`, next to `write_title_screen_texts`, so the layout can
+change without touching saved games. The font has A-Z (shown in upper case),
+0-9, space and `.`; any other character shows as `.`. Message positions are
+bitmap addresses: `text_pos(row, col)` = `$6000 + row * 320 + col * 8`.
 
 Text screens are hires down to raster line `$B8` (inside row 16) and
 multicolour below it, for the landscape. Row 18 is below the switch, so
