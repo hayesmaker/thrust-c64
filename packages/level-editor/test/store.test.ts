@@ -93,6 +93,17 @@ describe('game files', () => {
     expect(s.toJSON().version).toBe(2);
   });
 
+  it('the author is saved with the game and makes it dirty', () => {
+    const a = template();
+    a.markSaved('a.json');
+    a.setAuthor('Andy');
+    expect(a.dirty).toBe(true);
+    const b = new Store();
+    b.fromJSON(JSON.parse(JSON.stringify(a.toJSON())), 'a.json');
+    expect(b.author).toBe('Andy');
+    expect(b.dirty).toBe(false);
+  });
+
   it('round cycle edits are undoable and make the game dirty', () => {
     const s = template();
     s.markSaved('a.json');

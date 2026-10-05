@@ -2,6 +2,8 @@
 // in level_tables.asm and the level_N_door_x shapes in levels.asm, as read by
 // tick_door_logic and apply_level_rules in the mod's thrust.asm.
 
+import { upgradeTitle } from './title';
+
 export type DoorSide = 'left' | 'right';
 export type DoorMode = 'slide' | 'reveal';
 
@@ -163,8 +165,8 @@ export function doorShapesAsm(doors: (Door | null)[] = [0, 1, 2, 3, 4, 5].map((n
   return out.join('\n');
 }
 
-/** Add the door / rule tables to level sources made before doors were data.
- *  Sources that have them are returned unchanged. */
+/** Add the door / rule tables and the title line to level sources made
+ *  before they were there. Sources that have them are returned unchanged. */
 export function upgradeSources(levelsAsm: string, tablesAsm: string): { levelsAsm: string; tablesAsm: string } {
   const has = (s: string, label: string) => new RegExp(`^${label}:`, 'm').test(s);
   const eol = (s: string) => (s.includes('\r\n') ? '\r\n' : '\n');
@@ -178,6 +180,7 @@ export function upgradeSources(levelsAsm: string, tablesAsm: string): { levelsAs
     lines.splice(end, 0, ...doorTablesAsm().split('\n'));
     tablesAsm = lines.join(e);
   }
+  tablesAsm = upgradeTitle(tablesAsm);
   if (!has(levelsAsm, 'level_0_door_x')) {
     const e = eol(levelsAsm);
     const body = levelsAsm.replace(/(\r?\n)*$/, '');

@@ -36,6 +36,8 @@ export interface GameFile {
   format?: string;
   version?: number;
   name?: string;
+  /** shown on the title screen as "BY <author>" */
+  author?: string;
   levelsAsm: string;
   tablesAsm: string;
   levels: Level[];
@@ -54,6 +56,8 @@ export class Store {
   project: Project | null = null;
   /** Game name; the JSON file is named after it. */
   name = DEFAULT_NAME;
+  /** Author, for the title screen ('' = none). */
+  author = '';
   /** File the game was opened from or last saved to (null: never saved). */
   fileName: string | null = null;
   level = 0;
@@ -122,9 +126,10 @@ export class Store {
   }
 
   /** Start editing a game. `fileName` null = not saved anywhere yet. */
-  load(project: Project, name: string, fileName: string | null = null): void {
+  load(project: Project, name: string, fileName: string | null = null, author = ''): void {
     this.project = project;
     this.name = name;
+    this.author = author;
     this.fileName = fileName;
     this.savedState = this.state();
     this.level = 0;
@@ -207,7 +212,7 @@ export class Store {
   }
 
   private state(): string {
-    return this.project ? JSON.stringify([this.name, this.project.levels, this.project.roundCycle]) : '';
+    return this.project ? JSON.stringify([this.name, this.author, this.project.levels, this.project.roundCycle]) : '';
   }
 
   /** The game differs from the file it was opened from or saved to (or
@@ -223,12 +228,18 @@ export class Store {
       format: GAME_FORMAT,
       version: GAME_VERSION,
       name: this.name,
+      author: this.author,
       levelsAsm: p.levelsAsm,
       tablesAsm: p.tablesAsm,
       levels: p.levels,
       roundCycle: p.roundCycle,
       level: this.level,
     };
+  }
+
+  setAuthor(author: string): void {
+    this.author = author;
+    this.notify(true);
   }
 
   setName(name: string): void {
@@ -254,7 +265,7 @@ export class Store {
     p.levels = upgradeLevels(p, s.levels);
     if (Array.isArray(s.roundCycle) && s.roundCycle.length) p.roundCycle = s.roundCycle;
     const name = s.name ?? fileName?.replace(/\.json$/i, '') ?? DEFAULT_NAME;
-    this.load(p, name, fileName);
+    this.load(p, name, fileName, typeof s.author === 'string' ? s.author : '');
     this.level = Math.min(Math.max(0, s.level ?? 0), p.levels.length - 1);
     this.changed(false);
   }

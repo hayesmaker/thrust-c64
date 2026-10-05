@@ -160,3 +160,99 @@ describe('doors and rules', () => {
     expect(upgradeLevels(p, [{ ...p.levels[3], door: null }])[0].door).toBeNull();
   });
 });
+
+import { DEFAULT_TITLE, TITLE_MAX, authorText, titleAsm, titleColumn, titleText } from '../src/model/title';
+
+describe('title', () => {
+  it('keeps what the font can show, upper case, at most 28 characters', () => {
+    expect(titleText('Andy\'s big-caves_2!')).toBe('ANDYS BIG CAVES 2');
+    expect(titleText('  v1.2   final ')).toBe('V1.2 FINAL');
+    expect(titleText('x'.repeat(40))).toHaveLength(TITLE_MAX);
+    expect(titleText('???')).toBe(DEFAULT_TITLE);
+  });
+
+  it('is centred like the assembler does it', () => {
+    expect(titleColumn(DEFAULT_TITLE)).toBe(10);
+    expect(titleColumn('A'.repeat(28))).toBe(6);
+    expect(titleColumn('AB')).toBe(19);
+  });
+
+  it('author line: "BY " + the name, 28 characters in all; empty without one', () => {
+    expect(authorText('andy h.')).toBe('BY ANDY H.');
+    expect(authorText('a'.repeat(40))).toHaveLength(TITLE_MAX);
+    expect(authorText('  ')).toBe('');
+  });
+
+  it('the mod source has the default title block that older sources get', () => {
+    expect(MOD.tables).toContain(titleAsm());
+  });
+
+  // earlier versions of the title section, which carried their own positions
+  const oldTitleOnly = [
+    '// ----------------------------------------------------------------------------',
+    "// Title screen line (row 16 of the high score screen): the game's name, ASCII,",
+    '// ----------------------------------------------------------------------------',
+    'msg_title:',
+    '    .byte <title_pos, >title_pos',
+    'msg_title_text:',
+    '    .byte $41,$42',
+    'msg_title_end:',
+    '    .byte $ff',
+    '.label title_pos = $6000 + 16 * 320 + floor((40 - (msg_title_end - msg_title_text)) / 2) * 8',
+    '.errorif msg_title_end - msg_title_text > 28, "too long"',
+  ].join('\n');
+  const oldRow14 = [
+    '// ----------------------------------------------------------------------------',
+    "// Title screen lines (high score screen): the game's name on row 14 and its",
+    '// ----------------------------------------------------------------------------',
+    'msg_title:',
+    '    .byte <title_pos, >title_pos',
+    'msg_title_text:',
+    '    .byte $41,$42',
+    'msg_title_end:',
+    '    .byte $ff',
+    '.label title_pos = $6000 + 14 * 320 + floor((40 - (msg_title_end - msg_title_text)) / 2) * 8',
+    '.errorif msg_title_end - msg_title_text > 28, "too long"',
+    'msg_author:',
+    '    .byte <author_pos, >author_pos',
+    'msg_author_text:',
+    '    .byte $42,$59,$20,$4d,$45',
+    'msg_author_end:',
+    '    .byte $ff',
+    '.label author_pos = $6000 + 16 * 320 + floor((40 - (msg_author_end - msg_author_text)) / 2) * 8',
+    '.errorif msg_author_end - msg_author_text > 28, "too long"',
+  ].join('\n');
+  const ascii = (t: string) => [...t].map((c) => c.charCodeAt(0));
+
+  it.each([
+    ['title only, row 16', oldTitleOnly, ' '],
+    ['title row 14 + author, positions in the file', oldRow14, 'BY ME'],
+  ])('earlier title sections (%s) become the current one, keeping their texts', (_, old, author) => {
+    const tables = MOD.tables.replace(titleAsm(), old);
+    expect(tables).not.toBe(MOD.tables);
+    const p = loadProject(MOD.levels, tables);
+    expect(p.tablesAsm).toBe(MOD.tables.replace(titleAsm(), titleAsm(ascii('AB'), ascii(author))));
+    expect(p.tablesAsm).not.toMatch(/title_pos =|author_pos =/);
+  });
+
+  it('saving with a title writes msg_title_text; without one keeps it', () => {
+    const p = loadProject(MOD.levels, MOD.tables);
+    expect(saveProject(p).tablesAsm).toBe(MOD.tables);
+    const out = saveProject(p, { title: 'Hello world', author: 'me' });
+    const T = parseAsm(out.tablesAsm);
+    expect(blockBytes(T, 'msg_title_text')).toEqual([...'HELLO WORLD'].map((c) => c.charCodeAt(0)));
+    expect(blockBytes(T, 'msg_author_text')).toEqual([...'BY ME'].map((c) => c.charCodeAt(0)));
+    const none = saveProject(loadProject(out.levelsAsm, out.tablesAsm), { author: '' });
+    expect(blockBytes(parseAsm(none.tablesAsm), 'msg_author_text')).toEqual([0x20]);
+  });
+});
+
+import { fontTyping } from '../src/model/title';
+
+describe('title boxes', () => {
+  it('turn what is typed into what the font shows, keeping a space being typed', () => {
+    expect(fontTyping("andy's big-cave ", 28)).toBe('ANDYS BIG CAVE ');
+    expect(fontTyping('  two  spaces', 28)).toBe('TWO SPACES');
+    expect(fontTyping('x'.repeat(30), 25)).toHaveLength(25);
+  });
+});

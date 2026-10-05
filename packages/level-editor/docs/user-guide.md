@@ -434,7 +434,13 @@ The **Game** section at the top of the panel:
 
 | | |
 |--|--|
-| **name** | the game's name. Saving names the file after it ("Big Caves" → `big-caves.json`). |
+| **name** | the game's name, up to 28 characters. Saving names the file after it ("Big Caves" → `big-caves.json`), and the game shows it centred on the title screen, under the high score table. |
+| **author** | who made the game, up to 25 characters. The title screen shows it centred under the name as "BY …"; leave it empty for no author line. |
+
+The title screen font has only A-Z (always upper case), 0-9, space and full
+stop, so the name and author boxes take only those: letters turn upper case as
+you type, `-` and `_` become spaces, and other characters are not accepted.
+The line under the fields shows both lines as the game will show them.
 | file line | the file the game was opened from or saved to (or "not saved yet"), and **unsaved changes** when you have edited it since. The browser tab shows a • too. |
 | **Save** (Ctrl+S) | save the game. |
 | **Save as…** (Ctrl+Shift+S) | save it as a new file, e.g. to try something out without changing the original. |

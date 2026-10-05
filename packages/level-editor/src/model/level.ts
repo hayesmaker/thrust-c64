@@ -2,6 +2,7 @@
 // written back by patching only the tables that changed.
 
 import { type AsmDoc, type AsmValue, blockBytes, blockValues, parseAsm, serializeAsm, writeBlock } from './asm';
+import { authorBytes, titleBytes } from './title';
 import {
   type Door,
   type LevelRules,
@@ -210,8 +211,15 @@ export function upgradeLevels(p: Project, levels: Level[]): Level[] {
   }));
 }
 
+export interface SaveOptions {
+  /** The game's name for the title screen (msg_title_text); omitted: keep it. */
+  title?: string;
+  /** The author for the title screen (msg_author_text); omitted: keep it. */
+  author?: string;
+}
+
 /** Write every level into copies of the loaded sources; returns the new sources. */
-export function saveProject(p: Project): { levelsAsm: string; tablesAsm: string } {
+export function saveProject(p: Project, opts: SaveOptions = {}): { levelsAsm: string; tablesAsm: string } {
   const src = upgradeSources(p.levelsAsm, p.tablesAsm);
   const L = parseAsm(src.levelsAsm);
   const Tb = parseAsm(src.tablesAsm);
@@ -265,6 +273,8 @@ export function saveProject(p: Project): { levelsAsm: string; tablesAsm: string 
     setAt(Tb, 'level_rule_reverse', n, RULES.indexOf(l.rules.reverse));
     setAt(Tb, 'level_rule_invisible', n, RULES.indexOf(l.rules.invisible));
   }
+  if (opts.title !== undefined) writeBlock(Tb, 'msg_title_text', titleBytes(opts.title));
+  if (opts.author !== undefined) writeBlock(Tb, 'msg_author_text', authorBytes(opts.author));
   const c = p.roundCycle;
   writeBlock(Tb, 'round_cycle_reverse', c.map((r) => (r.reverse ? 0xff : 0)));
   writeBlock(Tb, 'round_cycle_invisible', c.map((r) => (r.invisible ? 0xff : 0)));

@@ -116,4 +116,22 @@ describe.skipIf(!canBuild)('KickAssembler build', () => {
     expect(rd('level_door_rows', 6)).toEqual([0, 0, 0, 13, 21, 15]);
     expect(rd('level_5_door_x', 15)).toEqual([0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc6, 0xc5, 0xc4, 0xc3, 0xc2, 0xc1, 0xc0]);
   }, 60_000);
+
+  it.each([
+    ['SUPER THRUSTY MAKER', 10],
+    ['A'.repeat(28), 6],
+    ['AB', 19],
+  ])('title "%s" is centred at column %i', (title, col) => {
+    const src = join(ROOT, 'packages/thrusty-levels/src');
+    const p = loadProject(readFileSync(join(src, 'levels.asm'), 'utf8'), readFileSync(join(src, 'level_tables.asm'), 'utf8'));
+    const out = saveProject(p, { title, author: title.slice(3) });
+    const rd = buildMod(out.levelsAsm, out.tablesAsm);
+    const bytes = (row: number, text: string) => {
+      const pos = 0x6000 + row * 320 + col * 8;
+      return [pos & 0xff, pos >> 8, ...[...text].map((c) => c.charCodeAt(0)), 0xff];
+    };
+    expect(rd('msg_title', 3 + title.length)).toEqual(bytes(15, title));
+    // "BY " + the author: as long as the title, so in the same column
+    if (title.length > 3) expect(rd('msg_author', 3 + title.length)).toEqual(bytes(16, 'BY ' + title.slice(3)));
+  }, 60_000);
 });

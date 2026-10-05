@@ -33,7 +33,10 @@ try {
   // older games: doors / rules from the game's own sources
   project.levels = upgradeLevels(loadProject(game.levelsAsm, game.tablesAsm), game.levels);
   if (Array.isArray(game.roundCycle) && game.roundCycle.length) project.roundCycle = game.roundCycle;
-  const out = saveProject(project);
+  const out = saveProject(project, {
+    ...(typeof game.name === 'string' ? { title: game.name } : {}),
+    author: typeof game.author === 'string' ? game.author : '',
+  });
   for (const k of ['levelsAsm', 'tablesAsm'] as const) {
     if (out[k] === disk[k]) console.log(`unchanged ${files[k]}`);
     else {
