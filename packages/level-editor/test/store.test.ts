@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { fileNameFor } from '../src/editor/files';
 import { DEFAULT_NAME, GAME_FORMAT, Store } from '../src/editor/store';
 import { loadProject } from '../src/model/level';
-import { nameProblem } from '../src/model/title';
+import { AUTHOR_MAX, TITLE_MAX, nameProblem } from '../src/model/title';
 
 const ROOT = join(import.meta.dirname, '../../..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,7 +60,7 @@ describe('game files', () => {
     expect(file.version).toBe(2);
     const b = new Store();
     b.fromJSON(file, 'big-caves.json');
-    expect(b.name).toBe('Big caves');
+    expect(b.name).toBe('BIG CAVES');
     expect(b.fileName).toBe('big-caves.json');
     expect(b.level).toBe(3);
     expect(b.project!.levels).toEqual(a.project!.levels);
@@ -72,7 +72,7 @@ describe('game files', () => {
     void format, version, name;
     const s = new Store();
     s.fromJSON({ ...old, sourceName: 'packages/thrusty-levels/src' }, 'old-levels.json');
-    expect(s.name).toBe('old-levels');
+    expect(s.name).toBe('OLD LEVELS');
   });
 
   it('opens version 1 games (no doors or rules in the file or its sources)', () => {
@@ -101,8 +101,21 @@ describe('game files', () => {
     expect(a.dirty).toBe(true);
     const b = new Store();
     b.fromJSON(JSON.parse(JSON.stringify(a.toJSON())), 'a.json');
-    expect(b.author).toBe('Andy');
+    expect(b.author).toBe('ANDY');
     expect(b.dirty).toBe(false);
+  });
+
+  it('opens names and authors as the name boxes would keep them', () => {
+    const file = JSON.parse(JSON.stringify(template().toJSON()));
+    const s = new Store();
+    s.fromJSON({ ...file, name: 'x'.repeat(5000), author: 'Ünïcode <b>me</b> 🙂'.repeat(50), level: 2 });
+    expect(s.name).toBe('X'.repeat(TITLE_MAX));
+    expect(s.author.length).toBeLessThanOrEqual(AUTHOR_MAX);
+    expect(s.author).toMatch(/^[A-Z0-9 .]+$/);
+    s.fromJSON({ ...file, name: 42, author: { evil: true }, level: 'lots' } as never, 'from-file.json');
+    expect(s.name).toBe('FROM FILE');
+    expect(s.author).toBe('');
+    expect(s.level).toBe(0);
   });
 
   it('round cycle edits are undoable and make the game dirty', () => {
@@ -148,7 +161,7 @@ describe('game name', () => {
     s.fromJSON({ ...TEMPLATE, name: 'my thrust game' });
     expect(s.name).toBe('');
     s.fromJSON({ ...TEMPLATE, name: 'Big Caves' });
-    expect(s.name).toBe('Big Caves');
+    expect(s.name).toBe('BIG CAVES');
   });
 
   it('builds need a name the title screen can show', () => {

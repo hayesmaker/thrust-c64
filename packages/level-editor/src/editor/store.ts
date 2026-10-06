@@ -7,6 +7,7 @@
 import { type Round } from '../model/door';
 import { type Level, type Project, decodeLevel, levelRows, loadProject, upgradeLevels } from '../model/level';
 import { snapObject } from '../model/objects';
+import { AUTHOR_MAX, TITLE_MAX, fontText } from '../model/title';
 import { type Layout } from '../model/validate';
 
 export type Side = 'left' | 'right';
@@ -274,10 +275,14 @@ export class Store {
     if (s.levels.length !== p.levels.length) throw new Error(`${s.levels.length} levels, expected ${p.levels.length}`);
     p.levels = upgradeLevels(p, s.levels);
     if (Array.isArray(s.roundCycle) && s.roundCycle.length) p.roundCycle = s.roundCycle;
-    let name = s.name ?? fileName?.replace(/\.json$/i, '') ?? DEFAULT_NAME;
+    // a file can hold anything: keep what the name / author boxes would
+    // (the font's characters, upper case, at most TITLE_MAX / AUTHOR_MAX)
+    let name = typeof s.name === 'string' ? s.name : (fileName?.replace(/\.json$/i, '') ?? DEFAULT_NAME);
     if (name.trim().toLowerCase() === OLD_DEFAULT_NAME) name = DEFAULT_NAME;
-    this.load(p, name, fileName, typeof s.author === 'string' ? s.author : '');
-    this.level = Math.min(Math.max(0, s.level ?? 0), p.levels.length - 1);
+    const author = typeof s.author === 'string' ? s.author : '';
+    this.load(p, fontText(name, TITLE_MAX), fileName, fontText(author, AUTHOR_MAX));
+    const level = Number.isInteger(s.level) ? (s.level as number) : 0;
+    this.level = Math.min(Math.max(0, level), p.levels.length - 1);
     this.changed(false);
   }
 
