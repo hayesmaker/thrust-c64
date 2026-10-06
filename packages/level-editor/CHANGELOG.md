@@ -1,5 +1,13 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* The player is always full screen and the game fills it: only ✕ (close),
+  **Pad** and **Pause** remain, floating over the game, and the on-screen pad
+  floats over it too. Messages fade after a few seconds. Rebuild, Restart,
+  Sound and Window are gone. Tap the game to go back to full screen after
+  leaving it.
+
 ## 0.3.0
 
 * Touch screens: pinch zoom and two-finger pan; tap selects, drag moves

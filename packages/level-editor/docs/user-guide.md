@@ -418,21 +418,18 @@ is for touch screens: it is shown on phones and tablets and hidden on
 computers. **Pad** shows or hides it, e.g. to play a phone with a Bluetooth
 gamepad; the browser remembers the choice.
 
-While the game is shown, the editor's own keys are switched off. The buttons
-beside the game (above it on a phone held upright); none of them covers the
-game:
+While the game is shown, the editor's own keys are switched off. The game
+fills the screen; three small buttons float in its top-left corner:
 
-* **Close**: back to the editor.
-* **Rebuild**: build your latest edits and restart. Edit, rebuild, try again.
-* **Restart**: run the same build again.
-* **Pause / Resume**.
-* **Sound off / on**.
+* **✕**: close, back to the editor. To try an edit, close, edit and
+  **Build & play** again.
 * **Pad**: show or hide the on-screen pad.
-* **Window / Full screen**: **Window** puts the game back over the map, with
-  the panel beside it, so you can edit and **Rebuild** without closing it.
-  Leaving the browser's full screen (Esc on a computer) does the same. On an
-  iPhone, where pages cannot go full screen, the game covers the whole page
-  instead; turning the phone sideways gives the biggest picture.
+* **Pause / Resume**.
+
+If the browser leaves full screen (Esc on a computer, or the back gesture on a
+phone), tap the game to go full screen again. On an iPhone, where pages cannot
+go full screen, the game covers the whole page instead; turning the phone
+sideways gives the biggest picture.
 
 **Build** only builds, without playing, e.g. to check for errors. If the build
 fails, the panel lists the errors with the table they are in, and the full

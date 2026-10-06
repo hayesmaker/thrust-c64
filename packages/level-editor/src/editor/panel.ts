@@ -461,7 +461,6 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   }
   $('p-play').onclick = () => runBuild(true);
   $('p-build').onclick = () => runBuild(false);
-  player.onRebuild = () => runBuild(true);
   window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !player.isOpen) {
       e.preventDefault();
