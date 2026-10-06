@@ -13,7 +13,7 @@ needs no GitHub key.
 |---|---|---|
 | `provision.sh` | server, once, with sudo | Java (the distro's), bubblewrap, KickAssembler 5.25 at `/opt/KickAss.jar`, nginx site |
 | `update.sh <ref>` | server | fetch, check out a tag or branch, `npm ci`, build, test, `pm2 reload` |
-| `deploy.sh <ref>` | your machine | `ssh thrust-host …/update.sh <ref>` |
+| `deploy.sh <ref>` | your machine | over ssh: fetch, then run `<ref>`'s own `update.sh <ref>` |
 | `release.sh <version>` | your machine | test, bump the version, commit, tag `v<version>` |
 | `ecosystem.config.cjs` | pm2 | the app, its port and build limits |
 | `nginx/thrust.hayesmaker64.com.conf` | nginx | static files, `/api/` proxy, build rate limit |
@@ -86,7 +86,13 @@ sudo certbot --nginx -d thrust.hayesmaker64.com
 5. Optional: a GitHub release with the mod attached:
    `gh release create v0.2.0 packages/thrusty-levels/build/thrusty-levels.prg --notes-from-tag`
 
-Roll back: `./deploy/deploy.sh v0.1.0`. To try a branch on the live site:
+`deploy.sh` runs the `update.sh` of the version being deployed, so a fix to it
+works on the same deploy. pm2 is found wherever it is installed (PATH, nvm,
+fnm) and runs with its own Node; the editor runs on Node 24.
+
+Roll back by deploying an older tag, e.g. `./deploy/deploy.sh v0.2.3`. Tags up to v0.2.2 have an
+`update.sh` that can't find pm2 over ssh: deploy those logged in to the server
+(`ssh thrust-host`, then `cd /srv/thrust-c64 && ./deploy/update.sh v0.2.2`). To try a branch on the live site:
 `./deploy/deploy.sh some-branch` (it must be pushed).
 
 `update.sh` builds into `dist.new` and runs every test (KickAssembler through the

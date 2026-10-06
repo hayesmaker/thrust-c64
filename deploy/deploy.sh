@@ -11,4 +11,15 @@ DIR=${DEPLOY_DIR:-/srv/thrust-c64}
 git ls-remote --exit-code origin "refs/tags/$REF" "refs/heads/$REF" >/dev/null ||
   { echo "$REF is not on GitHub: git push origin $REF"; exit 1; }
 echo "🚀 Deploying $REF to $HOST"
-ssh "$HOST" "$DIR/deploy/update.sh '$REF'"
+# Runs the update.sh of the version being deployed (not the server's current
+# copy), so a fix to it applies on the same deploy.
+ssh "$HOST" bash -s -- "$(printf %q "$REF")" "$(printf %q "$DIR")" <<'REMOTE'
+set -euo pipefail
+ref=$1 dir=$2
+cd "$dir"
+git fetch -q --tags --prune --force origin
+target=$ref
+git rev-parse -q --verify "refs/tags/$ref" >/dev/null || target=origin/$ref
+script=$(git show "$target:deploy/update.sh")
+exec bash -c "$script" "$dir/deploy/update.sh" "$ref"
+REMOTE
