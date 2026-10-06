@@ -9,13 +9,16 @@ import type { Level, Wall } from '../model/level';
 import { GUN_MUZZLE, gunArc, isGun } from '../model/objects';
 import { doorWallX } from '../model/door';
 import { OBJ_BOUNDS, SPRITE_ROWS, SPRITE_UNITS, objectParts, spriteImage } from './look';
+import { MOUSE_HIT, loupeCentre } from './gesture';
 import { wallXAt } from './ops';
 import { type Selection, type Side, type Store, sameSelection } from './store';
 
 export const RULER_LEFT = 64;
 export const RULER_TOP = 22;
-const HANDLE = 5; // half size of a point handle, px
-const HIT = 8;
+const HANDLE = 5; // half size of a point handle, px (mouse)
+const TOUCH_HANDLE = 8; // ... when editing by touch
+const LOUPE_R = 60; // loupe radius, px
+const LOUPE_ZOOM = 3;
 /** Approximate playfield: rows window Y + $38 ... + 92, 80 X units wide. */
 const SCREEN_TOP = 0x38;
 const SCREEN_ROWS = 92;
@@ -44,6 +47,13 @@ export class View {
   /** Objects in the level's own colours instead of one colour per type. */
   gameColours = false;
   cursor: { x: number; row: number } | null = null;
+  /** How close (px) the pointer must be to pick something: bigger for a finger. */
+  hitRadius = MOUSE_HIT;
+  /** Editing by touch: bigger handles (input.ts switches it). */
+  touchMode = false;
+  /** While dragging by touch: the finger (screen) and the spot to magnify
+   *  (world: the dragged point, which a relative drag keeps off the finger). */
+  loupe: { sx: number; sy: number; x: number; row: number } | null = null;
 
   private ctx: CanvasRenderingContext2D;
   private terrain = document.createElement('canvas');
@@ -58,6 +68,10 @@ export class View {
     this.ctx = canvas.getContext('2d')!;
     new ResizeObserver(() => this.resize()).observe(canvas);
     this.resize();
+  }
+
+  private get handle(): number {
+    return this.touchMode ? TOUCH_HANDLE : HANDLE;
   }
 
   get ux(): number {
@@ -177,6 +191,15 @@ export class View {
     c.beginPath();
     c.rect(RULER_LEFT, RULER_TOP, this.w - RULER_LEFT, this.h - RULER_TOP);
     c.clip();
+    this.drawScene(l, rows);
+    c.restore();
+    this.drawRulers();
+    if (this.loupe) this.drawLoupe(l, rows, this.loupe);
+  }
+
+  /** Terrain, grid, door, objects and walls (inside the current clip). */
+  private drawScene(l: Level, rows: number): void {
+    const c = this.ctx;
     c.imageSmoothingEnabled = false;
     for (const t of this.tiles()) {
       c.drawImage(this.terrain, this.sx(t), this.sy(0), 256 * this.ux, rows * this.scale);
@@ -193,8 +216,49 @@ export class View {
     }
     this.drawWall(l.left, 'left');
     this.drawWall(l.right, 'right');
+  }
+
+  /** A magnifier near the finger, showing what is under it (touch drags). */
+  private drawLoupe(l: Level, rows: number, f: { sx: number; sy: number; x: number; row: number }): void {
+    const c = this.ctx;
+    const at = loupeCentre(f.sx, f.sy, this.w, this.h, LOUPE_R);
+    const w = { x: f.x, row: f.row };
+    const saved = { camX: this.camX, camY: this.camY, scale: this.scale };
+    // the world point under the finger goes to the middle of the loupe
+    this.scale = saved.scale * LOUPE_ZOOM;
+    this.camX = w.x - (at.x - RULER_LEFT) / this.ux;
+    this.camY = w.row - (at.y - RULER_TOP) / this.scale;
+    c.save();
+    c.beginPath();
+    c.arc(at.x, at.y, LOUPE_R, 0, Math.PI * 2);
+    c.clip();
+    c.fillStyle = '#000';
+    c.fillRect(at.x - LOUPE_R, at.y - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
+    this.drawScene(l, rows);
+    // crosshair on the finger's spot
+    c.strokeStyle = '#ffd34f';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(at.x - 10, at.y + 0.5);
+    c.lineTo(at.x + 10, at.y + 0.5);
+    c.moveTo(at.x + 0.5, at.y - 10);
+    c.lineTo(at.x + 0.5, at.y + 10);
+    c.stroke();
     c.restore();
-    this.drawRulers();
+    Object.assign(this, saved);
+    c.strokeStyle = '#ffd34f';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(at.x, at.y, LOUPE_R, 0, Math.PI * 2);
+    c.stroke();
+    const label = `X ${hex2(Math.floor(w.x) & 0xff)}  row ${Math.max(0, Math.floor(w.row))}`;
+    c.font = '11px ui-monospace, monospace';
+    c.textBaseline = 'middle';
+    const tw = c.measureText(label).width;
+    c.fillStyle = 'rgba(21, 21, 29, 0.9)';
+    c.fillRect(at.x - tw / 2 - 5, at.y + LOUPE_R - 22, tw + 10, 16);
+    c.fillStyle = '#ffd34f';
+    c.fillText(label, at.x - tw / 2, at.y + LOUPE_R - 14);
   }
 
   private drawGrid(): void {
@@ -447,7 +511,8 @@ export class View {
       pts.forEach((p, i) => {
         const x = this.sx(p.x + t);
         const y = this.sy(p.row);
-        if (x < -HANDLE || x > this.w + HANDLE || y < -HANDLE || y > this.h + HANDLE) return;
+        const hs = this.handle;
+        if (x < -hs || x > this.w + hs || y < -hs || y > this.h + hs) return;
         if (i === 0) {
           c.fillStyle = '#666';
           c.beginPath();
@@ -458,7 +523,7 @@ export class View {
         const me: Selection = { kind: 'point', side, index: i };
         const isSel = sameSelection(sel, me);
         const isHov = sameSelection(hov, me);
-        const s = isSel || isHov ? HANDLE + 1 : HANDLE;
+        const s = isSel || isHov ? hs + 1 : hs;
         c.fillStyle = isSel ? '#fff' : WALL_COLOUR[side];
         c.strokeStyle = '#000';
         c.lineWidth = 1;
@@ -522,11 +587,14 @@ export class View {
 
   // ---- hit testing --------------------------------------------------------
 
-  hitPoint(sx: number, sy: number): { side: Side; index: number; tile: number } | null {
+  // Each hit also gives `d`, its distance (px) from the pointer, so a finger
+  // (bigger radius) can pick the nearest thing; the mouse uses priority order.
+
+  hitPoint(sx: number, sy: number): { side: Side; index: number; tile: number; d: number } | null {
     const l = this.store.current;
     if (!l) return null;
-    let best: { side: Side; index: number; tile: number } | null = null;
-    let bestD = HIT;
+    let best: { side: Side; index: number; tile: number; d: number } | null = null;
+    let bestD = this.hitRadius;
     for (const side of ['left', 'right'] as const)
       for (const t of this.tiles())
         l[side].points.forEach((p, i) => {
@@ -534,30 +602,33 @@ export class View {
           const d = Math.max(Math.abs(this.sx(p.x + t) - sx), Math.abs(this.sy(p.row) - sy));
           if (d <= bestD) {
             bestD = d;
-            best = { side, index: i, tile: t };
+            best = { side, index: i, tile: t, d };
           }
         });
     return best;
   }
 
   /** Door tab (index -1) or row handle under the mouse. */
-  hitDoor(sx: number, sy: number): { index: number; tile: number } | null {
+  hitDoor(sx: number, sy: number): { index: number; tile: number; d: number } | null {
     const d = this.store.current?.door;
     if (!d) return null;
     const rowsShown = this.store.selection?.kind === 'door' || this.scale >= 4;
     for (const t of this.tiles()) {
       const tab = this.doorTab(d, t);
-      if (sx >= tab.x && sx <= tab.x + tab.w && sy >= tab.y && sy <= tab.y + tab.h) return { index: -1, tile: t };
+      const pad = this.hitRadius - MOUSE_HIT; // a finger gets slack round the tab
+      if (sx >= tab.x - pad && sx <= tab.x + tab.w + pad && sy >= tab.y - pad && sy <= tab.y + tab.h + pad)
+        return { index: -1, tile: t, d: Math.max(0, tab.x - sx, sx - tab.x - tab.w, tab.y - sy, sy - tab.y - tab.h) };
       if (!rowsShown) continue;
       const w = this.toWorld(sx, sy);
       const k = Math.floor(w.row) - d.top;
       if (k < 0 || k >= d.rows.length) continue;
-      if (Math.abs(this.sx(this.doorEdge(d.side, d.rows[k]) + t) - sx) <= HIT) return { index: k, tile: t };
+      const dx = Math.abs(this.sx(this.doorEdge(d.side, d.rows[k]) + t) - sx);
+      if (dx <= this.hitRadius) return { index: k, tile: t, d: dx };
     }
     return null;
   }
 
-  hitObject(sx: number, sy: number): { index: number; tile: number; grabX: number; grabY: number } | null {
+  hitObject(sx: number, sy: number): { index: number; tile: number; grabX: number; grabY: number; d: number } | null {
     const l = this.store.current;
     if (!l || !this.showObjects) return null;
     const w = this.toWorld(sx, sy);
@@ -565,22 +636,28 @@ export class View {
       for (let i = l.objects.length - 1; i >= 0; i--) {
         const o = l.objects[i];
         const b = OBJ_BOUNDS[o.type] ?? { x0: 0, y0: 0, x1: 4, y1: 8 };
-        const pad = 3 / this.ux; // a few pixels of slack for tiny zooms
+        // a few pixels of slack for tiny zooms; a finger's radius for touch
+        const padPx = this.hitRadius === MOUSE_HIT ? 3 : this.hitRadius;
+        const pad = padPx / this.ux;
         const gx = w.x - (o.x + t);
         const gy = w.row - o.y;
-        if (gx >= b.x0 - pad && gx <= b.x1 + pad && gy >= b.y0 - pad * 2 && gy <= b.y1 + pad * 2)
-          return { index: i, tile: t, grabX: gx, grabY: gy };
+        if (gx >= b.x0 - pad && gx <= b.x1 + pad && gy >= b.y0 - pad * 2 && gy <= b.y1 + pad * 2) {
+          const ox = Math.max(0, b.x0 - gx, gx - b.x1) * this.ux;
+          const oy = Math.max(0, b.y0 - gy, gy - b.y1) * this.scale;
+          return { index: i, tile: t, grabX: gx, grabY: gy, d: Math.hypot(ox, oy) };
+        }
       }
     return null;
   }
 
-  hitRestart(sx: number, sy: number): { index: number; tile: number } | null {
+  hitRestart(sx: number, sy: number): { index: number; tile: number; d: number } | null {
     const l = this.store.current;
     if (!l || !this.showObjects) return null;
     for (const t of this.tiles())
       for (let i = l.restarts.length - 1; i >= 0; i--) {
         const r = l.restarts[i];
-        if (Math.abs(this.sx(r.shipX + t) - sx) <= HIT && Math.abs(this.sy(r.shipY) - sy) <= HIT) return { index: i, tile: t };
+        const d = Math.max(Math.abs(this.sx(r.shipX + t) - sx), Math.abs(this.sy(r.shipY) - sy));
+        if (d <= this.hitRadius) return { index: i, tile: t, d };
       }
     return null;
   }
@@ -600,10 +677,10 @@ export class View {
           const b = pts[k];
           if (!b) {
             // vertical tail below the last point
-            if (row > a.row && Math.abs(this.sx(a.x + t) - sx) <= HIT) return { side, index: k, row, x, tile: t };
+            if (row > a.row && Math.abs(this.sx(a.x + t) - sx) <= this.hitRadius) return { side, index: k, row, x, tile: t };
             continue;
           }
-          if (distToSegment(sx, sy, this.sx(a.x + t), this.sy(a.row), this.sx(b.x + t), this.sy(b.row)) <= HIT)
+          if (distToSegment(sx, sy, this.sx(a.x + t), this.sy(a.row), this.sx(b.x + t), this.sy(b.row)) <= this.hitRadius)
             return { side, index: k, row, x, tile: t };
         }
       }

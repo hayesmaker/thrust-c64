@@ -63,9 +63,21 @@ pre b { color: var(--text); }
 #toast { position: fixed; right: 380px; bottom: 36px; background: var(--panel-2); border: 1px solid var(--accent);
   padding: 8px 12px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 420px; }
 #toast.show { opacity: 1; }
+/* touch toolbar over the canvas (src/editor/touchbar.ts) */
+#touchbar { position: absolute; left: 70px; right: 6px; bottom: 30px; display: none; flex-wrap: wrap;
+  gap: 6px; justify-content: center; pointer-events: none; }
+#touchbar.show { display: flex; }
+#touchbar .group { display: flex; gap: 4px; padding: 4px; border-radius: 10px; pointer-events: auto;
+  background: rgba(21, 21, 29, 0.88); border: 1px solid var(--line); }
+#touchbar .group.sel { display: none; }
+#touchbar.has-sel .group.sel { display: flex; }
+#touchbar button { min-width: 40px; height: 40px; padding: 0 10px; font-size: 16px; touch-action: manipulation; }
+#touchbar button.on { background: var(--accent); color: #fff; }
+#touchbar button.danger { color: var(--warn); }
+#touchbar button[hidden] { display: none; }
 @media (max-width: 800px) {
-  #app { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; }
-  #stage { height: 60vh; }
+  #app { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
+  #stage { height: calc(100dvh - 160px); min-height: 320px; }
   #panel { border-left: 0; border-top: 1px solid var(--line); }
   #toast { right: 16px; }
 }
@@ -121,16 +133,77 @@ textarea { width: 100%; box-sizing: border-box; background: var(--bg); color: va
 .meter.over > div { background: var(--warn); }
 .meter .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--muted); }
 
-/* phase 4/5: emulator overlay */
-#play { position: absolute; inset: 0 0 24px 0; background: #000d; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 10px; padding: 16px; z-index: 5; }
+/* phase 4/5: emulator overlay. Windowed: over the canvas. .full: the whole
+   screen (the browser's full screen, or covering the page). The grid puts the
+   bar and D-pad beside the screen in landscape and under it in portrait; no
+   text goes over the screen. */
+#play { position: absolute; inset: 0 0 24px 0; background: #000d; z-index: 5; container-type: size; }
 #play[hidden] { display: none; }
-.play-bar { display: flex; align-items: center; gap: 8px; width: min(100%, 960px); }
-.play-bar .spacer { flex: 1; }
-.play-screen { position: relative; width: min(100%, 960px); aspect-ratio: 384 / 272; max-height: calc(100% - 110px); }
+#play.full { position: fixed; inset: 0; background: #000; z-index: 50; }
+body.playing { overflow: hidden; }
+.play-grid { width: 100%; height: 100%; display: grid; gap: 10px; padding: 12px;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  grid-template: "side" auto "screen" minmax(0, 1fr) "btns" auto / minmax(0, 1fr); }
+.play-side { grid-area: side; display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
+.play-bar { display: flex; flex-wrap: wrap; gap: 6px; }
+.play-bar button { padding: 4px 8px; }
+#play-pad.on { border-color: var(--accent); color: var(--accent); }
+.play-info { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow: hidden; }
+#play-status { font-size: 12px; }
+.play-help { color: var(--muted); font-size: 12px; }
+#play.pad .play-help { display: none; }
+.play-screen { grid-area: screen; position: relative; min-width: 0; min-height: 0; }
 .play-screen canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; background: #000;
   display: block; }
-.play-help { color: var(--muted); font-size: 12px; text-align: center; max-width: 960px; }
+
+/* virtual gamepad */
+.vpad-dpad, .vpad-btns { display: none; touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; }
+#play.pad .vpad-dpad { display: grid; }
+#play.pad .vpad-btns { display: grid; }
+.vpad-dpad { grid-area: dpad; width: 136px; height: 136px; border-radius: 50%; flex: none; margin-top: auto;
+  background: #ffffff14; border: 1px solid #ffffff2a;
+  grid-template: ". up ." 1fr "left . right" 1fr ". down ." 1fr / 1fr 1fr 1fr; place-items: center; }
+.vpad-dpad span { color: #ffffff70; font-size: 22px; pointer-events: none; }
+.vpad-dpad span.on { color: var(--accent); }
+.vpad-dpad .up { grid-area: up; } .vpad-dpad .down { grid-area: down; }
+.vpad-dpad .left { grid-area: left; } .vpad-dpad .right { grid-area: right; }
+.vpad-btns { grid-area: btns; align-self: end; justify-self: end; gap: 10px;
+  grid-template: ". fire" auto "shield thrust" auto / auto auto; }
+.vpad-btns button { width: 68px; height: 68px; border-radius: 50%; padding: 0; font-size: 12px; font-weight: 600;
+  background: #ffffff14; border: 1px solid #ffffff2a; color: #ffffffb0; touch-action: none; }
+.vpad-btns button.on { background: var(--accent); color: #000; }
+.vpad-btns [data-act=fire] { grid-area: fire; }
+.vpad-btns [data-act=shield] { grid-area: shield; }
+.vpad-btns [data-act=thrust] { grid-area: thrust; }
+
+/* portrait with the pad: D-pad bottom left, buttons bottom right, under the screen */
+#play.pad .play-grid { grid-template: "bar bar" auto "info info" auto "screen screen" auto
+  "dpad btns" minmax(0, 1fr) / auto 1fr; }
+#play.pad .play-side { display: contents; }
+#play.pad .play-bar { grid-area: bar; }
+#play.pad .play-info { grid-area: info; }
+#play.pad .play-screen { aspect-ratio: 384 / 272; }
+#play.pad .vpad-dpad { align-self: end; }
+
+/* landscape: bar and D-pad on the left, buttons on the right of the screen */
+@container (orientation: landscape) {
+  .play-grid { grid-template: "side screen" minmax(0, 1fr) / clamp(130px, 18cqw, 220px) minmax(0, 1fr); }
+  #play.pad .play-grid { grid-template: "side screen btns" minmax(0, 1fr)
+    / clamp(150px, 20cqw, 230px) minmax(0, 1fr) clamp(150px, 20cqw, 230px); }
+  #play.pad .play-side { display: flex; }
+  #play.pad .play-screen { aspect-ratio: auto; }
+  .vpad-btns { align-self: end; justify-self: center; }
+  .play-bar button { flex: 1 1 auto; }
+}
+@container (orientation: landscape) and (max-height: 340px) {
+  .play-grid { gap: 6px; padding: 6px max(6px, env(safe-area-inset-right)) 6px max(6px, env(safe-area-inset-left)); }
+  .play-bar { gap: 4px; }
+  .play-bar button { padding: 2px 6px; font-size: 11px; }
+  .vpad-dpad { width: 120px; height: 120px; }
+  .vpad-btns button { width: 58px; height: 58px; }
+}
 kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px;
   padding: 0 4px; color: var(--text); background: var(--panel-2); }
 input[type=text] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line);

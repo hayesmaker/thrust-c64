@@ -428,6 +428,8 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       return;
     }
     building = true;
+    // full screen needs the click itself, so the player opens before the build
+    if (play) player.open();
     const levelNo = store.level;
     const startHere = $<HTMLInputElement>('p-start-here').checked;
     const out = saveProject(p, { title: store.name, author: store.author });
@@ -442,7 +444,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       if (!r.ok) {
         buildStatus.className = 'small';
         buildStatus.innerHTML = renderBuildErrors(r, out);
-        if (player.isOpen) player.setStatus('build failed: see the panel');
+        player.buildFailed();
         return;
       }
       const start = r.startLevel !== null ? `, starts on level ${r.startLevel}` : '';
@@ -452,7 +454,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     } catch (e) {
       buildStatus.className = 'small warn';
       buildStatus.textContent = String(e instanceof Error ? e.message : e);
-      if (player.isOpen) player.setStatus('build failed: see the panel');
+      player.buildFailed();
     } finally {
       building = false;
     }
