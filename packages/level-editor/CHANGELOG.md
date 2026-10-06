@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.3.2
 
 * Opening a game file (or the autosave) keeps its name and author the way the
   name / author boxes would: the font's characters, upper case, at most 28 /
