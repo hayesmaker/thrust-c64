@@ -1,5 +1,9 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* Fix: `deploy.sh` (update.sh over a plain ssh command) found neither fnm nor pm2.
+
 ## 0.2.0
 
 * The panel shows the editor's version next to its title (the release tag, from

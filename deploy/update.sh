@@ -15,6 +15,10 @@ main() {
   if [ -n "$fnm" ]; then eval "$("$fnm" env --shell bash)"
   elif [ -s "$HOME/.nvm/nvm.sh" ]; then . "$HOME/.nvm/nvm.sh"
   fi
+  # pm2 lives with the default Node: find it before switching to the editor's
+  local pm2; pm2=$(command -v pm2 || true)
+  [ -n "$pm2" ] || { echo "pm2 not found (is it installed for the default Node?)"; exit 1; }
+  pm2=$(readlink -f "$pm2")
 
   if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo "the checkout has local changes: not deploying"; git status --short; exit 1
@@ -29,7 +33,7 @@ main() {
 
   cd "$app"
   # the editor's own Node (.node-version), whatever the other pm2 apps use
-  if [ -n "$fnm" ]; then fnm use --install-if-missing --silent-if-unchanged
+  if [ -n "$fnm" ]; then "$fnm" use --install-if-missing --silent-if-unchanged
   elif command -v nvm >/dev/null; then nvm install "$(cat .node-version)" >/dev/null
   fi
   # pm2 gets the real path: fnm's per-shell links are temporary
@@ -43,8 +47,8 @@ main() {
 
   echo "→ switch"
   rm -rf dist.old; [ -d dist ] && mv dist dist.old; mv dist.new dist
-  pm2 startOrReload "$root/deploy/ecosystem.config.cjs" --update-env
-  pm2 save >/dev/null
+  "$pm2" startOrReload "$root/deploy/ecosystem.config.cjs" --update-env
+  "$pm2" save >/dev/null
   trap - ERR
 
   for _ in 1 2 3 4 5 6 7 8 9 10; do
