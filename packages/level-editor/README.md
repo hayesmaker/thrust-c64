@@ -27,7 +27,7 @@ Access API, elsewhere it downloads `<name>.json`). Edits also autosave in the
 browser. **Build & play** (Ctrl+Enter) builds a temp copy
 of the mod with KickAssembler and runs it in the embedded c64-ready emulator,
 starting on the level you are editing (untick "start the game on this level"
-for the normal game), full screen. Keys in the game: Space start / shield, A S rotate,
+for the normal game); "play full screen" for the whole screen. Keys in the game: Space start / shield, A S rotate,
 Shift thrust, Return fire, F5/F7 pause/resume, Esc abort. The on-screen pad
 (touch) and gamepads press the same keys (`src/editor/controls.ts`).
 
