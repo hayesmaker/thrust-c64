@@ -5,10 +5,11 @@
 // Each run uses a fresh player (the same path as a first start), which is
 // the reliable way to autorun a new PRG.
 //
-// Build & play opens the overlay full screen (the browser's full screen
-// where it allows it, else covering the page); "Window" puts it back over
-// the canvas. The virtual gamepad (touch) and physical gamepads hold
-// Thrust's keys through a KeyMixer (controls.ts).
+// The player is always full screen: the browser's full screen where it
+// allows it, else covering the page. The game fills the screen; Close, Pad
+// and Pause float over it, and short messages fade. The virtual gamepad
+// (touch) and physical gamepads hold Thrust's keys through a KeyMixer
+// (controls.ts).
 
 import { C64Player, CanvasRenderer } from 'c64-ready';
 import { ACTION_KEYS, type Action, KeyMixer, dpadActions, gamepadActions } from './controls';
@@ -17,6 +18,7 @@ const BASE = import.meta.env.BASE_URL;
 const WASM_URL = `${BASE}c64/c64.wasm`;
 const WORKLET_URL = `${BASE}c64/audio-worklet-processor.js`;
 const PAD_KEY = 'thrust-editor.vpad';
+const MESSAGE_MS = 3000;
 
 // c64-ready drives the C64 joystick from a gamepad, which Thrust never reads
 // (and joystick lines can look like keys to the keyboard scan): keep its
@@ -30,17 +32,14 @@ type FullscreenDoc = Document & { webkitFullscreenElement?: Element | null; webk
 export class PlayerOverlay {
   /** True while the overlay is shown (input.ts ignores editor shortcuts). */
   isOpen = false;
-  onRebuild: () => void = () => {};
   onOpen: () => void = () => {};
   onClose: () => void = () => {};
 
   private root: HTMLElement;
   private canvas: HTMLCanvasElement;
-  private status: HTMLElement;
-  private title: HTMLElement;
+  private message: HTMLElement;
+  private messageTimer = 0;
   private player: C64Player | null = null;
-  private last: { prg: Uint8Array; title: string } | null = null;
-  private muted = false;
   private paused = false;
   private padShown: boolean;
   private generation = 0;
@@ -48,61 +47,33 @@ export class PlayerOverlay {
   private pollFrame = 0;
   private startWasDown = false;
   private gamepadSeen = false;
-  /** the browser's full screen was asked for (not just covering the page) */
-  private realFull = false;
 
   constructor(host: HTMLElement) {
     this.root = document.createElement('div');
     this.root.id = 'play';
     this.root.hidden = true;
     this.root.innerHTML = `
-      <div class="play-grid">
-        <div class="play-side">
-          <div class="play-bar">
-            <button id="play-close" title="back to the editor">Close</button>
-            <button id="play-rebuild" title="build the current edits and restart">Rebuild</button>
-            <button id="play-restart" title="run this build again">Restart</button>
-            <button id="play-pause" title="pause (F5) / resume (F7)">Pause</button>
-            <button id="play-mute">Sound off</button>
-            <button id="play-pad" title="show or hide the on-screen gamepad">Pad</button>
-            <button id="play-full" title="full screen or over the editor">Window</button>
-          </div>
-          <div class="play-info">
-            <b id="play-title"></b>
-            <span id="play-status" class="muted"></span>
-            <div class="play-help">
-              <kbd>Space</kbd> start / shield &amp; tractor ·
-              <kbd>A</kbd> <kbd>S</kbd> rotate · <kbd>Shift</kbd> thrust · <kbd>Return</kbd> fire ·
-              <kbd>F5</kbd> pause, <kbd>F7</kbd> resume · <kbd>Esc</kbd> (Run/Stop) abort.
-              Gamepad: D-pad / stick rotate (up thrust, down shield), A thrust, B shield, X fire, Start pause.
-            </div>
-          </div>
-          <div class="vpad-dpad" aria-label="D-pad: rotate, up thrust, down shield">
-            <span class="up">▲</span><span class="left">◀</span><span class="right">▶</span><span class="down">▼</span>
-          </div>
-        </div>
-        <div class="play-screen"><canvas id="play-canvas" width="384" height="272"></canvas></div>
-        <div class="vpad-btns">
-          <button data-act="shield">Shield</button>
-          <button data-act="fire">Fire</button>
-          <button data-act="thrust">Thrust</button>
-        </div>
+      <canvas id="play-canvas" width="384" height="272"></canvas>
+      <div class="play-bar">
+        <button id="play-close" title="back to the editor" aria-label="Close">✕</button>
+        <button id="play-pad" title="show or hide the on-screen gamepad">Pad</button>
+        <button id="play-pause" title="pause (F5) / resume (F7)">Pause</button>
+      </div>
+      <div id="play-message" hidden></div>
+      <div class="vpad-dpad" aria-label="D-pad: rotate, up thrust, down shield">
+        <span class="up">▲</span><span class="left">◀</span><span class="right">▶</span><span class="down">▼</span>
+      </div>
+      <div class="vpad-btns">
+        <button data-act="shield">Shield</button>
+        <button data-act="fire">Fire</button>
+        <button data-act="thrust">Thrust</button>
       </div>`;
     host.append(this.root);
     const $ = (id: string) => this.root.querySelector<HTMLElement>('#' + id)!;
     this.canvas = $('play-canvas') as HTMLCanvasElement;
-    this.status = $('play-status');
-    this.title = $('play-title');
-    $('play-rebuild').onclick = () => this.onRebuild();
-    $('play-restart').onclick = () => this.last && this.play(this.last.prg, this.last.title);
-    $('play-mute').onclick = (e) => {
-      this.muted = !this.muted;
-      this.player?.audio.setMuted(this.muted);
-      (e.target as HTMLElement).textContent = this.muted ? 'Sound on' : 'Sound off';
-    };
+    this.message = $('play-message');
     $('play-pause').onclick = () => this.togglePause();
     $('play-close').onclick = () => this.close();
-    $('play-full').onclick = () => this.setFull(!this.root.classList.contains('full'));
     let pref: string | null = null;
     try {
       pref = localStorage.getItem(PAD_KEY);
@@ -116,18 +87,18 @@ export class PlayerOverlay {
     };
     this.showPad(this.padShown);
     this.mountPad();
-    const onFs = () => {
-      // the browser left full screen (Esc, or the system back gesture)
-      if (!fullscreenElement() && this.root.classList.contains('full') && this.realFull) this.setFull(false);
-    };
-    document.addEventListener('fullscreenchange', onFs);
-    document.addEventListener('webkitfullscreenchange', onFs);
+    // left full screen (Esc, the system back gesture): a tap on the game goes back
+    this.canvas.addEventListener('pointerdown', () => this.isOpen && !fullscreenElement() && this.enterFullscreen());
     // no key stays held when the page goes to the background
     document.addEventListener('visibilitychange', () => document.hidden && this.keys.releaseAll());
   }
 
-  setStatus(text: string): void {
-    this.status.textContent = text;
+  /** A short message over the top of the game; it fades unless `stay`. */
+  setStatus(text: string, stay = false): void {
+    clearTimeout(this.messageTimer);
+    this.message.textContent = text;
+    this.message.hidden = !text;
+    if (text && !stay) this.messageTimer = window.setTimeout(() => (this.message.hidden = true), MESSAGE_MS);
   }
 
   /**
@@ -139,22 +110,20 @@ export class PlayerOverlay {
     this.isOpen = true;
     this.onOpen();
     this.root.hidden = false;
-    this.setFull(true);
+    document.body.classList.add('playing');
+    this.enterFullscreen();
     this.startPolling();
   }
 
-  /** The build for this run failed: back to the panel if nothing is running. */
+  /** The build for this run failed: back to the panel, which shows why. */
   buildFailed(): void {
-    if (this.isOpen && !this.player) void this.close();
-    else if (this.isOpen) this.setStatus('build failed: close to see the panel');
+    if (this.isOpen) void this.close();
   }
 
-  async play(prg: Uint8Array, title: string): Promise<void> {
+  async play(prg: Uint8Array, _title: string): Promise<void> {
     const gen = ++this.generation;
-    this.last = { prg, title };
     this.open();
-    this.title.textContent = title;
-    this.setStatus('starting…');
+    this.setStatus('starting…', true);
     this.keys.releaseAll();
     this.setPaused(false);
     await this.stopPlayer();
@@ -165,7 +134,7 @@ export class PlayerOverlay {
       gameUrl: 'null',
       gameData: prg,
       gameType: 'prg',
-      gameSource: title,
+      gameSource: 'thrust',
       renderer,
       audio: { workletUrl: WORKLET_URL },
       onProgress: (pct, label) => {
@@ -179,12 +148,11 @@ export class PlayerOverlay {
       await player.start();
       if (gen !== this.generation) return void player.destroy();
       player.setInputMode('keyboard');
-      player.audio.setMuted(this.muted);
-      this.setStatus(this.padShown ? 'running: press Shield to start' : 'running: press Space to start');
+      this.setStatus(this.padShown ? 'press Shield to start' : 'press Space (or B) to start');
       this.canvas.focus();
     } catch (e) {
       renderer.setError(String(e));
-      this.setStatus(`emulator error: ${e}`);
+      this.setStatus(`emulator error: ${e}`, true);
     }
   }
 
@@ -194,8 +162,8 @@ export class PlayerOverlay {
     this.keys.releaseAll();
     cancelAnimationFrame(this.pollFrame);
     if (fullscreenElement() === this.root) exitFullscreen();
-    this.root.classList.remove('full');
     document.body.classList.remove('playing');
+    this.setStatus('');
     this.root.hidden = true;
     await this.stopPlayer();
     this.onClose();
@@ -207,25 +175,15 @@ export class PlayerOverlay {
     if (p) await p.destroy().catch(() => {});
   }
 
-  /** Full screen (the browser's where it allows it, else covering the page) or over the canvas. */
-  private setFull(on: boolean): void {
-    this.root.classList.toggle('full', on);
-    document.body.classList.toggle('playing', on);
-    this.root.querySelector('#play-full')!.textContent = on ? 'Window' : 'Full screen';
-    this.realFull = false;
-    if (on && !fullscreenElement()) {
-      const el = this.root as FullscreenEl;
-      try {
-        const r = el.requestFullscreen
-          ? el.requestFullscreen({ navigationUI: 'hide' })
-          : el.webkitRequestFullscreen?.();
-        this.realFull = true;
-        if (r instanceof Promise) r.catch(() => (this.realFull = false));
-      } catch {
-        // not allowed here (iPhone, or no click to go with it): covering the page will do
-      }
-    } else if (!on && fullscreenElement() === this.root) {
-      exitFullscreen();
+  /** The browser's full screen, where it allows it (not on iPhone; and only from a click or key). */
+  private enterFullscreen(): void {
+    if (fullscreenElement()) return;
+    const el = this.root as FullscreenEl;
+    try {
+      const r = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen?.();
+      if (r instanceof Promise) r.catch(() => {});
+    } catch {
+      // not allowed here: the overlay covers the page anyway
     }
   }
 
@@ -239,6 +197,7 @@ export class PlayerOverlay {
   private setPaused(on: boolean): void {
     this.paused = on;
     this.root.querySelector('#play-pause')!.textContent = on ? 'Resume' : 'Pause';
+    this.root.querySelector('#play-pause')!.classList.toggle('on', on);
   }
 
   private togglePause(): void {
