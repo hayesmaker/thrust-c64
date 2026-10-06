@@ -17,7 +17,6 @@ args=(
   --proc /proc --dev /dev --tmpfs /tmp
   --bind "$HERE" "$HERE" --chdir "$HERE"
   --unshare-all --die-with-parent --new-session
-  --clearenv --setenv PATH /usr/bin --setenv HOME /tmp
 )
 # merged /usr (links) or not (real folders, older upgraded Debian)
 for d in lib lib64 lib32 bin; do
@@ -28,4 +27,5 @@ done
 # the JDK's conf/ links into /etc/java-NN-openjdk on Debian/Ubuntu
 for d in /etc/java-*; do [ -d "$d" ] && args+=(--ro-bind "$d" "$d"); done
 
-exec bwrap "${args[@]}" -- "$JAVA" -Xmx256m "$@"
+# env -i: an empty environment (bwrap before 0.5, e.g. Debian 11, has no --clearenv)
+exec env -i PATH=/usr/bin HOME=/tmp "$(command -v bwrap)" "${args[@]}" -- "$JAVA" -Xmx256m "$@"

@@ -45,7 +45,7 @@ chmod -R a+rwX "$tmp"
 if ! (cd "$tmp" && sudo -u "${SUDO_USER:-nobody}" KICKASS=/opt/KickAss.jar "$ROOT/deploy/kickass-sandbox.sh" -jar /opt/KickAss.jar t.asm >/dev/null 2>&1); then
   echo "KickAssembler does not run inside bubblewrap. Output:"
   (cd "$tmp" && sudo -u "${SUDO_USER:-nobody}" "$ROOT/deploy/kickass-sandbox.sh" -jar /opt/KickAss.jar t.asm) || true
-  echo "On Ubuntu 23.10+ AppArmor may block it: see deploy/README.md, 'Sandbox fails'."
+  echo "See deploy/README.md, 'Sandbox fails' (Debian: user namespaces off; Ubuntu 23.10+: AppArmor)."
   exit 1
 fi
 rm -rf "$tmp"
