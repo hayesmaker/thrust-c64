@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-time (re-runnable) server setup for the level editor. On the server, from the checkout:
 #   sudo ./deploy/provision.sh
-# Installs Java, bubblewrap and KickAssembler, and the nginx site. Touches nothing else.
+# Installs Java (Debian/Ubuntu), bubblewrap and KickAssembler, and the nginx site. Touches nothing else.
 set -euo pipefail
 
 KICKASS_VERSION=5.25
@@ -14,7 +14,9 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 
 echo "→ Java, bubblewrap"
 apt-get update -qq
-apt-get install -y -qq openjdk-21-jre-headless bubblewrap unzip curl
+# the distro's Java (Debian 12: 17, Ubuntu 24.04: 21): KickAssembler needs 8+
+apt-get install -y -qq default-jre-headless bubblewrap unzip curl
+java -version 2>&1 | head -1
 
 echo "→ KickAssembler $KICKASS_VERSION"
 if [ "$(sha256sum "$KICKASS_DIR/KickAss.jar" 2>/dev/null | cut -d' ' -f1)" != "$KICKASS_SHA256" ]; then

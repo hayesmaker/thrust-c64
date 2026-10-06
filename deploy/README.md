@@ -11,7 +11,7 @@ needs no GitHub key.
 
 | File | Runs | Does |
 |---|---|---|
-| `provision.sh` | server, once, with sudo | Java 21, bubblewrap, KickAssembler 5.25 at `/opt/KickAss.jar`, nginx site |
+| `provision.sh` | server, once, with sudo | Java (the distro's), bubblewrap, KickAssembler 5.25 at `/opt/KickAss.jar`, nginx site |
 | `update.sh <ref>` | server | fetch, check out a tag or branch, `npm ci`, build, test, `pm2 reload` |
 | `deploy.sh <ref>` | your machine | `ssh thrust-host …/update.sh <ref>` |
 | `release.sh <version>` | your machine | test, bump the version, commit, tag `v<version>` |
