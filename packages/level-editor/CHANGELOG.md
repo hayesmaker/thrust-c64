@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.2.3
 
 * Fix: `deploy.sh` could not find pm2 when it belongs to an nvm Node; `deploy.sh`
   now runs the deployed version's own `update.sh`.
