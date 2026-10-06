@@ -72,67 +72,28 @@ Not elegant: it wobbled the whole way (fuel went from 1000 to 171, much of it on
 the shield, which the tractor beam shares), never fired a shot, and left the
 reactor alone. But it got the pod out.
 
-## The code
+## Run it yourself
 
-Run in the browser console on the editor in development (`npm run dev`, where
-the page has `window.editor`), with a game started by holding Space for a
-second or two. This is the version that won (the fixes from the table in
-place).
+[`autopilot.js`](autopilot.js) is the winning autopilot as one script that
+does everything: builds the original levels, opens the player covering the
+page, starts a game (waiting out the title screen, then holding Space), flies
+mission 1 and stops a few seconds after getting out with the pod.
 
-```js
-const K = { left: ['a', 'KeyA'], right: ['s', 'KeyS'], thrust: ['Shift', 'ShiftLeft'], shield: [' ', 'Space'] };
-const held = new Set();
-// c64-ready lets go of the C64's Shift on any key down without shiftKey, so
-// every key event says whether thrust (Shift) is held
-const send = (type, a) =>
-  window.dispatchEvent(new KeyboardEvent(type, { key: K[a][0], code: K[a][1], shiftKey: held.has('thrust'), bubbles: true }));
-const set = (a, on) => {
-  if (on && !held.has(a)) { held.add(a); send('keydown', a); }
-  else if (!on && held.has(a)) { held.delete(a); send('keyup', a); }
-};
-const rd = (a) => window.editor.player.player.ramRead(a);
-const s8 = (v) => (v > 127 ? v - 256 : v);
-const state = () => ({
-  ang: rd(0x0d),
-  x: rd(0x33) + rd(0x32) / 256,
-  y: rd(0x30) * 256 + rd(0x2f) + rd(0x2e) / 256,
-  vx: s8(rd(0x14)) + rd(0x13) / 256,
-  vy: s8(rd(0x16)) + rd(0x15) / 256,
-  attached: rd(0x22), line: rd(0x45), tick: rd(0x61),
-});
+1. `npm run dev` in `packages/level-editor` (the script needs the
+   development page's `window.editor` and the build API, so it does not run on
+   the live site).
+2. Open the editor, open the browser console (F12), paste the whole of
+   `autopilot.js` and press Return.
+3. To record it full screen: click the game once it shows. The browser only
+   allows full screen from a click, so until then the game covers the page and
+   a note at the top says full screen was refused; the click clears it.
 
-const POD = { x: 0x8f, y: 0x1bd };
-const c = { kp: 0.03, kv: 0.2, g: 0.006, thrMin: 0.002 };
-const clamp = (v, m) => Math.max(-m, Math.min(m, v));
-let phase = 'go', running = true;
+`autopilot.stop()` stops it early. It only reads memory and presses keys;
+your game in the editor is not touched.
 
-function loop() {
-  if (!running) return;
-  requestAnimationFrame(loop);
-  const s = state();
-  if (s.tick !== 0 || s.y < 16) return [...held].forEach((a) => set(a, false)); // starting, paused, exploding
-  let tx = POD.x, ty = POD.y - 20, vmax = 0.5, tractor = false;
-  if (phase === 'go' && Math.abs(tx - s.x) < 3 && Math.abs(ty - s.y) < 6 && Math.abs(s.vx) < 0.15 && Math.abs(s.vy) < 0.2)
-    phase = 'grab';
-  if (phase === 'grab') { ty = POD.y - 14; tractor = true; if (s.line) phase = 'lift'; }
-  if (phase === 'lift') { ty = 0x100; vmax = 0.25; tractor = !s.attached; }
-
-  const ex = ((Math.round(tx - s.x) + 128) & 255) - 128; // X wraps at 256
-  const ey = ty - s.y;
-  const Tx = (clamp(ex * c.kp, vmax) - s.vx) * c.kv;
-  const Ty = (clamp(ey * c.kp, vmax) - s.vy) * c.kv - c.g;
-  let ta = Math.round((Math.atan2(Tx, -Ty) / (2 * Math.PI)) * 32);
-  ta = (Math.max(-7, Math.min(7, ((((ta + 16) % 32) + 32) % 32) - 16)) + 32) % 32;
-  const err = ((ta - s.ang + 48) % 32) - 16;
-  set('right', err > 0);
-  set('left', err < 0);
-  const th = (s.ang * 2 * Math.PI) / 32;
-  set('thrust', Math.abs(err) <= 1 && Tx * Math.sin(th) - Ty * Math.cos(th) > c.thrMin);
-  set('shield', tractor);
-}
-loop();
-// stop: running = false; [...held].forEach((a) => set(a, false));
-```
+Run from that file afterwards, it won first time, on its first ship: 2000
+points, all lives left, fuel 891 of 1000. The steering is the same as the
+winning run's; the difference is that the fixes were all in from the start.
 
 ## Things learned about Thrust on the way
 
