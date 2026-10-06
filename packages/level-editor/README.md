@@ -27,8 +27,9 @@ Access API, elsewhere it downloads `<name>.json`). Edits also autosave in the
 browser. **Build & play** (Ctrl+Enter) builds a temp copy
 of the mod with KickAssembler and runs it in the embedded c64-ready emulator,
 starting on the level you are editing (untick "start the game on this level"
-for the normal game). Keys in the game: Space start / shield, A S rotate,
-Shift thrust, Return fire, F5/F7 pause/resume, Esc abort.
+for the normal game), full screen. Keys in the game: Space start / shield, A S rotate,
+Shift thrust, Return fire, F5/F7 pause/resume, Esc abort. The on-screen pad
+(touch) and gamepads press the same keys (`src/editor/controls.ts`).
 
 The editor never writes the mod. "Assembler files" offers the game as the two
 level files (to drop into the mod and build by hand) and the terrain `.byte`
@@ -102,7 +103,8 @@ violations (click one to select the object).
 `store.ts` (state, undo, autosave), `view.ts` (canvas), `input.ts`
 (mouse/keys), `ops.ts` (point edits with the format's constraints),
 `panel.ts` (side panel), `export.ts`, `api.ts` (build API client),
-`player.ts` (c64-ready emulator overlay).
+`player.ts` (c64-ready emulator overlay, on-screen pad, gamepad polling),
+`controls.ts` (pad / gamepad -> Thrust's keys).
 
 Test fixture `test/fixtures/original_levels.json` is made from the original
 build by `python3 tools/level2json.py` (run `./build.sh` first).

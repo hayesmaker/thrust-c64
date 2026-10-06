@@ -8,6 +8,13 @@
   redo, fit, zoom, nudges (×8), Step / Free (Shift / Alt) and Delete. Mouse
   and keyboard work as before.
 * Phones: the canvas takes most of the screen, the panel below it.
+* Build & play opens the game full screen, with the buttons and help beside it
+  (never over it); **Window** puts it back over the map.
+* On-screen gamepad for touch screens (D-pad, Shield, Thrust, Fire), shown on
+  phones and tablets; **Pad** shows or hides it.
+* Gamepads: D-pad / stick rotate (up thrust, down shield), A thrust, B shield,
+  X fire, Start pause, Back abort. All controls press Thrust's keys.
+* **Pause / Resume** button (F5 / F7).
 
 ## 0.2.4
 

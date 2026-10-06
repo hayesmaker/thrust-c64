@@ -389,31 +389,50 @@ room. The quickest savings are dashed slopes: make them even with Shift-drag.
 ![Playing level 3 in the built-in emulator](img/play.png)
 
 **Build & play** (or **Ctrl + Enter**) builds the game with your changes and
-starts it in the built-in C64 emulator. It takes about a second. The build
-uses a temporary copy of the mod; nothing is written to the mod's files.
+starts it in the built-in C64 emulator, full screen. It takes about a second.
+The build uses a temporary copy of the mod; nothing is written to the mod's
+files. If the build fails, the player closes and the panel shows the errors.
 
 With **start the game on this level** ticked (the default), the game starts on
 the level you are editing, so you do not have to play through the others.
 Untick it to play from level 0 as normal.
 
-Game keys:
+Controls:
 
-| Key | Action |
-|-----|--------|
-| Space | start the game; shield and tractor beam |
-| A / S | rotate left / right |
-| Shift | thrust |
-| Return | fire |
-| F5 / F7 | pause / resume |
-| Esc | abort the game (Run/Stop) |
+| Key | Gamepad | On-screen pad | Action |
+|-----|---------|---------------|--------|
+| Space | B, LB, LT, D-pad / stick down | Shield, D-pad down | start the game; shield and tractor beam |
+| A / S | D-pad / stick left / right | D-pad left / right | rotate left / right |
+| Shift | A, RT, D-pad / stick up | Thrust, D-pad up | thrust |
+| Return | X, Y, RB | Fire | fire |
+| F5 / F7 | Start | **Pause** button | pause / resume |
+| Esc | Back / Select | | abort the game (Run/Stop) |
+
+Gamepad buttons are named as on an Xbox pad (on a PlayStation pad: A is
+cross, B circle, X square, Y triangle). Any gamepad the browser knows works;
+press a button once the game is showing and the player names the pad. The
+D-pad's diagonals hold two keys, e.g. up-left thrusts while turning left.
+
+The **on-screen pad** (D-pad bottom left, Shield / Thrust / Fire bottom right)
+is for touch screens: it is shown on phones and tablets and hidden on
+computers. **Pad** shows or hides it, e.g. to play a phone with a Bluetooth
+gamepad; the browser remembers the choice.
 
 While the game is shown, the editor's own keys are switched off. The buttons
-above the game:
+beside the game (above it on a phone held upright); none of them covers the
+game:
 
+* **Close**: back to the editor.
 * **Rebuild**: build your latest edits and restart. Edit, rebuild, try again.
 * **Restart**: run the same build again.
+* **Pause / Resume**.
 * **Sound off / on**.
-* **Close**: back to the editor.
+* **Pad**: show or hide the on-screen pad.
+* **Window / Full screen**: **Window** puts the game back over the map, with
+  the panel beside it, so you can edit and **Rebuild** without closing it.
+  Leaving the browser's full screen (Esc on a computer) does the same. On an
+  iPhone, where pages cannot go full screen, the game covers the whole page
+  instead; turning the phone sideways gives the biggest picture.
 
 **Build** only builds, without playing, e.g. to check for errors. If the build
 fails, the panel lists the errors with the table they are in, and the full
@@ -524,6 +543,9 @@ while you edit by touch. Use a mouse again and the editor goes back to normal.
 
 For exact positions, pinch in close, or type them into the Selection section
 of the panel.
+
+To play by touch, use the on-screen pad (see
+[Building and playing](#12-building-and-playing)).
 
 ## 15. Troubleshooting
 
