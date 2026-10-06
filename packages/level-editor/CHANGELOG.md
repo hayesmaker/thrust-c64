@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.3.1
 
 * The player is always full screen and the game fills it: only ✕ (close),
   **Pad** and **Pause** remain, floating over the game, and the on-screen pad
