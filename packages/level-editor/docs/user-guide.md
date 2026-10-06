@@ -394,7 +394,9 @@ The build uses a temporary copy of the mod; nothing is written to the mod's
 files. If the build fails, the panel shows the errors.
 
 Tick **play full screen** to play on the whole screen instead (the box is
-ticked to begin with on phones and tablets, and the browser remembers it).
+ticked to begin with on phones, tablets and handhelds, and the browser
+remembers it). If the browser refuses full screen, the player says so at the
+top; tap the game to try again.
 
 With **start the game on this level** ticked (the default), the game starts on
 the level you are editing, so you do not have to play through the others.

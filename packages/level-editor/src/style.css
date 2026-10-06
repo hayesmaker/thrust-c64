@@ -162,7 +162,7 @@ body.playing { overflow: hidden; }
 .play-bar button.on { color: var(--accent); border-color: var(--accent); }
 #play-message { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
   max-width: calc(100% - 300px); padding: 4px 10px; border-radius: 6px; background: #000a; color: var(--text);
-  font-size: 12px; pointer-events: none; text-align: center; }
+  font-size: 12px; pointer-events: none; text-align: center; white-space: pre-line; }
 #play-message[hidden] { display: none; }
 
 /* virtual gamepad, translucent over the game */
