@@ -37,7 +37,10 @@ To make a saved game the new template: `npm run game-to-mod -- my-game.json`
 writes its levels into the mod's `levels.asm` / `level_tables.asm` (the rest
 of those files is kept), then `./packages/thrusty-levels/build.sh`.
 
-`THRUST_MOD_SRC` points the server at another mod folder.
+`THRUST_MOD_SRC` points the server at another mod folder. Build server settings:
+`KICKASS` (the jar), `KICKASS_JAVA` (the command that runs it, e.g. the sandbox
+`deploy/kickass-sandbox.sh`), `BUILD_TIMEOUT_MS` (120000), `BUILD_MAX_QUEUE` (8),
+`BUILDS_DIR`. Hosting: [`deploy/README.md`](../../deploy/README.md).
 
 **Memory:** the Level section shows a rough meter per place the level data
 lives. For thrusty-levels (which defines `LEVELS_AREA_START/END` in

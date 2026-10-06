@@ -1,7 +1,7 @@
 // Build API: error parsing, start-level patch, and the HTTP routes against a
 // temp copy of the mod source (the real one is never touched).
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { type AddressInfo } from 'node:net';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -134,4 +134,42 @@ describe('HTTP API', () => {
     expect(b.errors[0]).toMatchObject({ file: 'levels.asm', message: 'Syntax error' });
     expect(b.files).toEqual(['kickass.log']);
   }, 60_000);
+});
+
+describe('build limits', () => {
+  let tmp = '';
+  let modDir = '';
+  beforeAll(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'thrust-limits-'));
+    modDir = join(tmp, 'mod');
+    cpSync(join(ROOT, 'packages/thrusty-levels/src'), modDir, { recursive: true });
+  });
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
+
+  const serve = async (api: ReturnType<typeof createApi>) => {
+    const server = createServer((req, res) => api(req, res));
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    return { server, base: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+  };
+  const post = (base: string) =>
+    fetch(base + '/api/build', { method: 'POST', body: JSON.stringify({ levelsAsm: '', tablesAsm: '' }) });
+
+  it('stops a build that takes too long', async () => {
+    const slow = join(tmp, 'slow-java.sh');
+    writeFileSync(slow, '#!/bin/sh\nexec sleep 5\n');
+    chmodSync(slow, 0o755);
+    const { server, base } = await serve(createApi({ modDir, buildsDir: join(tmp, 'b1'), java: slow, timeoutMs: 300 }));
+    const b = await (await post(base)).json();
+    server.close();
+    expect(b.ok).toBe(false);
+    expect(b.errors[0].message).toMatch(/longer than 0\.3 s/);
+  });
+
+  it('answers 503 when the queue is full', async () => {
+    const { server, base } = await serve(createApi({ modDir, buildsDir: join(tmp, 'b2'), maxQueue: 0 }));
+    const r = await post(base);
+    server.close();
+    expect(r.status).toBe(503);
+    expect((await r.json()).error).toMatch(/busy/);
+  });
 });

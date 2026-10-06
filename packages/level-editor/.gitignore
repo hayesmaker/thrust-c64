@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .backups/
+dist.new/
+dist.old/
