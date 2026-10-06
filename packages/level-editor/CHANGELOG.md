@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.2.0
 
 * The panel shows the editor's version next to its title (the release tag, from
   `git describe` at build time).
