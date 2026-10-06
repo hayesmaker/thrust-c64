@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -25,7 +26,24 @@ function editorServer(): Plugin {
   };
 }
 
+/** Shown in the panel: the release tag (v0.2.0), or how far past it the build is
+ *  (v0.2.0-3-g41c95c1); package.json's version when there is no git or no tag. */
+function appVersion(): string {
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: import.meta.dirname, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  const pkg = `v${JSON.parse(readFileSync(new URL('package.json', import.meta.url), 'utf8')).version}`;
+  try {
+    return git('describe', '--tags', '--match', 'v*', '--dirty');
+  } catch {
+    try {
+      return `${pkg}-g${git('rev-parse', '--short', 'HEAD')}`;
+    } catch {
+      return pkg;
+    }
+  }
+}
+
 export default defineConfig({
   plugins: [editorServer()],
+  define: { __APP_VERSION__: JSON.stringify(appVersion()) },
   test: { include: ['test/**/*.test.ts'] },
 });

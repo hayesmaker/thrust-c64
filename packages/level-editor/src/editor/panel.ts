@@ -47,7 +47,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   root.innerHTML = `
     <header>
       <div class="title">
-        <h1>Thrust level editor</h1>
+        <h1>Thrust level editor <span class="version" title="editor version">${__APP_VERSION__}</span></h1>
         <a class="donate" href="https://ko-fi.com/c64cade" target="_blank" rel="noopener" title="Support the author on Ko-fi">♥ Donate</a>
       </div>
       <div class="row">
