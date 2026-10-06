@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.2.4
 
 * New games start without a name, and Build / Build & play ask for one first, so
   games don't all come out titled "MY THRUST GAME". Games saved with that old
