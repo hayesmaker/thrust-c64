@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* The panel shows the editor's version next to its title (the release tag, from
+  `git describe` at build time).
 * New games start from the original six levels (`thrusty-levels/examples/template.json`,
   served at `/api/template`) instead of the mod's draft level 0.
 * `npm run mod-to-game`: write a game file from the mod's level files (`--original`:
