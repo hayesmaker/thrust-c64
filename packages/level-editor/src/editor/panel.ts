@@ -16,7 +16,7 @@ import {
 } from '../model/level';
 import { ANGLE_NAMES, GUN_SPREAD, gunArc, gunBase, gunParam, gunSpread, isGun, snapObject } from '../model/objects';
 import { pointsToRuns, segmentSteps } from '../model/terrain';
-import { AUTHOR_MAX, TITLE_MAX, authorText, fontText, fontTyping, titleText } from '../model/title';
+import { AUTHOR_MAX, TITLE_MAX, authorText, fontText, fontTyping, nameProblem, titleText } from '../model/title';
 import { type MemState, levelBytes, memoryAreas, memoryIssues, validateLevel, worstState } from '../model/validate';
 import { type BuildError, type BuildResult, type Source, build, buildFileUrl, fetchBuildFile, getSource, getTemplate } from './api';
 import { download, terrainAsm } from './export';
@@ -59,7 +59,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     </header>
     <section>
       <h2>Game</h2>
-      <label>name <input type="text" id="p-game-name" spellcheck="false" maxlength="${TITLE_MAX}"></label>
+      <label>name <input type="text" id="p-game-name" spellcheck="false" maxlength="${TITLE_MAX}" placeholder="needed to build: shown on the title screen"></label>
       <label>author <input type="text" id="p-game-author" spellcheck="false" maxlength="${AUTHOR_MAX}" placeholder="shown as BY …"></label>
       <div class="small muted" id="p-game-title"></div>
       <div class="small" id="p-game-file"></div>
@@ -300,7 +300,9 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   const authorInput = $<HTMLInputElement>('p-game-author');
   const showTitle = (name: string, author: string) => {
     const a = authorText(author);
-    $('p-game-title').textContent = `title screen: ${titleText(name)}${a ? ` / ${a}` : ''}`;
+    $('p-game-title').textContent = nameProblem(name)
+      ? 'title screen: the game needs a name'
+      : `title screen: ${titleText(name)}${a ? ` / ${a}` : ''}`;
   };
   /** Keep a box to what the title screen font can show (upper case), and
    *  return its text. Keeps the caret where it was. */
@@ -319,7 +321,8 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   // the box uses what is there
   nameInput.oninput = () => {
     const name = fontBox(nameInput, TITLE_MAX);
-    if (name && name !== store.name) store.setName(name);
+    if (name !== store.name) store.setName(name);
+    if (name) nameInput.classList.remove('needed');
     showTitle(name, store.author);
   };
   authorInput.oninput = () => {
@@ -327,7 +330,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     if (author !== store.author) store.setAuthor(author);
     showTitle(store.name, author);
   };
-  nameInput.onchange = () => (nameInput.value = fontText(store.name, TITLE_MAX) || store.name);
+  nameInput.onchange = () => (nameInput.value = fontText(store.name, TITLE_MAX));
   authorInput.onchange = () => (authorInput.value = fontText(store.author, AUTHOR_MAX));
   const save = async (as: boolean) => {
     try {
@@ -415,6 +418,15 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   async function runBuild(play: boolean) {
     const p = store.project;
     if (!p || building) return;
+    const problem = nameProblem(store.name);
+    if (problem) {
+      buildStatus.className = 'small warn';
+      buildStatus.textContent = problem;
+      if (player.isOpen) player.setStatus('the game needs a name: see the panel');
+      nameInput.classList.add('needed');
+      nameInput.focus();
+      return;
+    }
     building = true;
     const levelNo = store.level;
     const startHere = $<HTMLInputElement>('p-start-here').checked;
@@ -805,14 +817,14 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   function update() {
     const p = store.project;
     const l = store.current;
-    if (document.activeElement !== nameInput) nameInput.value = fontText(store.name, TITLE_MAX) || store.name;
+    if (document.activeElement !== nameInput) nameInput.value = fontText(store.name, TITLE_MAX);
     if (document.activeElement !== authorInput) authorInput.value = fontText(store.author, AUTHOR_MAX);
     if (document.activeElement !== nameInput && document.activeElement !== authorInput) showTitle(store.name, store.author);
     const file = store.fileName ?? 'not saved yet';
     $('p-game-file').innerHTML = !p
       ? '<span class="muted">no game loaded</span>'
       : `<span class="muted">${esc(file)}</span>${store.dirty ? ' · <span class="warn">unsaved changes</span>' : ''}`;
-    document.title = `${store.dirty ? '• ' : ''}${store.name} – Thrust level editor`;
+    document.title = `${store.dirty ? '• ' : ''}${store.name || 'untitled'} – Thrust level editor`;
     $<HTMLButtonElement>('p-undo').disabled = !store.canUndo();
     $<HTMLButtonElement>('p-redo').disabled = !store.canRedo();
     [...levelBox.children].forEach((b, n) => b.classList.toggle('active', n === store.level));

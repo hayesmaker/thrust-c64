@@ -67,7 +67,7 @@ export async function saveGame(store: Store, as = false): Promise<string | null>
 
 /** Ask before throwing away unsaved changes. */
 export function confirmDiscard(store: Store, what: string): boolean {
-  return !store.dirty || confirm(`${what}\n\n"${store.name}" has unsaved changes. They will be lost.`);
+  return !store.dirty || confirm(`${what}\n\n"${store.name || 'This game'}" has unsaved changes. They will be lost.`);
 }
 
 /** Open a game file (from a picker, the file input or a drop). */

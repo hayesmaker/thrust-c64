@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Make a release: set the editor's version, commit, tag. Pushing and deploying stay manual.
-#   ./deploy/release.sh 0.2.0
+#   ./deploy/release.sh 0.2.0      (or v0.2.0)
 set -euo pipefail
 V=${1:?usage: deploy/release.sh <version, e.g. 0.2.0>}
+V=${V#v} # v0.2.0 works too
 cd "$(dirname "$0")/.."
 
 [ "$(git branch --show-current)" = master ] || { echo "release from master"; exit 1; }

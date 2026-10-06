@@ -135,6 +135,7 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
   padding: 0 4px; color: var(--text); background: var(--panel-2); }
 input[type=text] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line);
   border-radius: 4px; padding: 4px 6px; font: 12px ui-monospace, monospace; margin-top: 3px; }
+#p-game-name.needed { border-color: var(--warn); outline: 1px solid var(--warn); }
 #p-build-status { margin-top: 6px; }
 #p-build-status pre { max-height: 200px; overflow: auto; }
 

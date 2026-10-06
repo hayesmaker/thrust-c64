@@ -32,6 +32,12 @@ export function fontTyping(s: string, max: number): string {
     .slice(0, max);
 }
 
+/** Why a game name can't go on the title screen, or null if it can. Builds
+ *  need a name, so games don't all come out with the same title. */
+export function nameProblem(name: string): string | null {
+  return fontText(name, TITLE_MAX) ? null : 'Give the game a name first: it is shown on the title screen.';
+}
+
 /** The title line for a game name (empty: the default title). */
 export const titleText = (name: string): string => fontText(name, TITLE_MAX) || DEFAULT_TITLE;
 

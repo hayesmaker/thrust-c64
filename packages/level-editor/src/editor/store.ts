@@ -29,7 +29,10 @@ export const ROWS_MARGIN = 300;
 export const GAME_FORMAT = 'thrust-level-editor/game';
 /** 2: doors, level rules and the round cycle */
 export const GAME_VERSION = 2;
-export const DEFAULT_NAME = 'my thrust game';
+/** New games have no name: the user picks one before building. */
+export const DEFAULT_NAME = '';
+/** The name new games used to get: treated as no name when a game is opened. */
+const OLD_DEFAULT_NAME = 'my thrust game';
 
 /** A saved game (JSON file). Older files (no format) are read too. */
 export interface GameFile {
@@ -264,7 +267,8 @@ export class Store {
     if (s.levels.length !== p.levels.length) throw new Error(`${s.levels.length} levels, expected ${p.levels.length}`);
     p.levels = upgradeLevels(p, s.levels);
     if (Array.isArray(s.roundCycle) && s.roundCycle.length) p.roundCycle = s.roundCycle;
-    const name = s.name ?? fileName?.replace(/\.json$/i, '') ?? DEFAULT_NAME;
+    let name = s.name ?? fileName?.replace(/\.json$/i, '') ?? DEFAULT_NAME;
+    if (name.trim().toLowerCase() === OLD_DEFAULT_NAME) name = DEFAULT_NAME;
     this.load(p, name, fileName, typeof s.author === 'string' ? s.author : '');
     this.level = Math.min(Math.max(0, s.level ?? 0), p.levels.length - 1);
     this.changed(false);

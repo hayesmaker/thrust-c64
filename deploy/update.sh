@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Deploy a tag (or branch) on the server, as the user that runs pm2:
-#   ./deploy/update.sh v0.2.0
+#   ./deploy/update.sh v0.2.0      (or 0.2.0)
 # Builds and tests before switching; on failure the running version stays up.
 set -euo pipefail
 
 main() {
   local ref=${1:?usage: deploy/update.sh <tag or branch>}
+  [[ $ref =~ ^[0-9]+\.[0-9] ]] && ref=v$ref # 0.2.0 means the tag v0.2.0
   local root; root=$(cd "$(dirname "$0")/.." && pwd)
   local app=$root/packages/level-editor
   cd "$root"

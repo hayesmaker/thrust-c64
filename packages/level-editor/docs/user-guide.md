@@ -434,7 +434,7 @@ The **Game** section at the top of the panel:
 
 | | |
 |--|--|
-| **name** | the game's name, up to 28 characters. Saving names the file after it ("Big Caves" → `big-caves.json`), and the game shows it centred on the title screen, under the high score table. |
+| **name** | the game's name, up to 28 characters. New games start without one, and **Build & play** asks for it first. Saving names the file after it ("Big Caves" → `big-caves.json`), and the game shows it centred on the title screen, under the high score table. |
 | **author** | who made the game, up to 25 characters. The title screen shows it centred under the name as "BY …"; leave it empty for no author line. |
 
 The title screen font has only A-Z (always upper case), 0-9, space and full
