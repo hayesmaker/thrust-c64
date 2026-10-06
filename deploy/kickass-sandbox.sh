@@ -12,7 +12,6 @@ HERE=$(pwd -P)
 
 args=(
   --ro-bind /usr /usr
-  --symlink usr/lib /lib --symlink usr/lib64 /lib64 --symlink usr/bin /bin
   --ro-bind-try /etc/ld.so.cache /etc/ld.so.cache
   --ro-bind "$(readlink -f "$KICKASS")" "$KICKASS"
   --proc /proc --dev /dev --tmpfs /tmp
@@ -20,6 +19,12 @@ args=(
   --unshare-all --die-with-parent --new-session
   --clearenv --setenv PATH /usr/bin --setenv HOME /tmp
 )
+# merged /usr (links) or not (real folders, older upgraded Debian)
+for d in lib lib64 lib32 bin; do
+  if [ -L "/$d" ]; then args+=(--symlink "$(readlink "/$d")" "/$d")
+  elif [ -d "/$d" ]; then args+=(--ro-bind "/$d" "/$d")
+  fi
+done
 # the JDK's conf/ links into /etc/java-NN-openjdk on Debian/Ubuntu
 for d in /etc/java-*; do [ -d "$d" ] && args+=(--ro-bind "$d" "$d"); done
 
