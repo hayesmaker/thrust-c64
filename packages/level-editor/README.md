@@ -1,6 +1,7 @@
 # Thrust level editor
 
-Web level editor for Thrust (C64).
+Web level editor for Thrust (C64), live at <https://thrust.hayesmaker64.com>
+(hosting: [`deploy/README.md`](../../deploy/README.md)).
 
 **Using the editor: see the [user guide](docs/user-guide.md).** This README is
 for working on the editor itself. Plan and status:

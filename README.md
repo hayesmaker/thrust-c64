@@ -4,6 +4,15 @@
 
 Thrust, Firebird 1986. Game by Jeremy C. Smith, music by Rob Hubbard.
 
+**2026 is 40 years since Thrust came out on the C64.** To celebrate, this repo
+now has a level editor that runs in the browser:
+**[thrust.hayesmaker64.com](https://thrust.hayesmaker64.com)**. You can draw
+your own caves, place the pod, fuel and guns, and play your levels in a C64
+emulator on the same page. Start from the original six levels, or make your
+own.
+
+[![The Thrust level editor](packages/level-editor/public/og-image.png)](https://thrust.hayesmaker64.com)
+
 This folder holds a complete, re-assemblable disassembly of the C64 version.
 `./build.sh` assembles it with KickAssembler and checks that the output is
 **byte-identical** to the original (unpacked) program.
@@ -32,7 +41,7 @@ This folder holds a complete, re-assemblable disassembly of the C64 version.
 | `docs/levels/` | Maps of all 6 levels rendered from the data (`tools/levelview.py`) |
 | `tools/` | The scripts used to produce the disassembly (see below) |
 | `packages/thrusty-levels/` | Modded levels: hand-edited copy of the source, not touched by `regen.sh` (see `packages/thrusty-levels/README.md`) |
-| `packages/level-editor/` | Web level editor: [user guide](packages/level-editor/docs/user-guide.md), plan in `docs/level_editor_plan.md` |
+| `packages/level-editor/` | Web level editor, live at [thrust.hayesmaker64.com](https://thrust.hayesmaker64.com): [user guide](packages/level-editor/docs/user-guide.md), plan in `docs/level_editor_plan.md` |
 
 ## How the program is laid out
 
@@ -92,7 +101,8 @@ It changes the original game in these ways:
   levels.
 * The title screen shows "SUPER THRUSTY MAKER", and a QR code links to this
   repo.
-* It starts from template levels.
+* Its level files hold a draft of a new level 0; the editor starts new games
+  from the original six levels instead.
 
 `./packages/thrusty-levels/build.sh` builds `packages/thrusty-levels/build/thrusty-levels.prg`.
 Add `run` to start it in VICE.
@@ -100,17 +110,17 @@ Add `run` to start it in VICE.
 ### [`packages/level-editor/`](packages/level-editor/README.md): the level editor
 
 This is a browser editor for Thrust levels, written in TypeScript with a
-canvas front end.
+canvas front end. Try it at **[thrust.hayesmaker64.com](https://thrust.hayesmaker64.com)**.
 
 * **Editing:** you draw the cave walls, place guns, fuel, the pod, the
   generator and switches, and set gravity, colours and restart points.
 * **Playing:** Build & play assembles the mod with your levels through a small
   Node API that runs KickAssembler. The game then runs in an emulator inside
   the page.
-* **Saving:** each game is saved as a JSON file. The mod's levels are only the
-  starting template and are never overwritten.
+* **Saving:** each game is saved as a JSON file. New games start from the
+  original six levels, and the mod's source is never overwritten.
 
-To run it: `cd packages/level-editor && npm install && npm run dev`. KickAssembler
+To run it locally: `cd packages/level-editor && npm install && npm run dev`. KickAssembler
 and Java are required for builds. The [user guide](packages/level-editor/docs/user-guide.md)
 is also built into the app: click **Guide** or press `?`.
 
