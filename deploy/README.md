@@ -33,9 +33,10 @@ Host thrust-host
     User hayesmaker
 ```
 
-Check: `ssh thrust-host node -v` must print v22.18 or newer (the server runs TypeScript
-directly). If it says "command not found" but node works when you log in, that's nvm:
-`update.sh` loads it itself.
+Node: the editor uses its own Node (24, from `packages/level-editor/.node-version`);
+`update.sh` installs it with fnm (or nvm) and points pm2 at it for this app only, so
+c64cade keeps its Node. `ssh thrust-host node -v` saying "command not found" is normal:
+fnm only loads in a login shell, and `update.sh` loads it itself.
 
 **3. Merge and push** this branch to master on GitHub.
 

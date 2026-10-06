@@ -59,5 +59,4 @@ else
   systemctl reload nginx
 fi
 
-node_v=$(sudo -u "${SUDO_USER:-root}" -i node -v 2>/dev/null || echo none)
-echo "✅ Provisioned. Node for ${SUDO_USER:-root}: $node_v (needs v22.18 or newer)"
+echo "✅ Provisioned. Next, as ${SUDO_USER:-your user}: ./deploy/update.sh <tag or branch>"

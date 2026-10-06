@@ -8,7 +8,9 @@ module.exports = {
       name: 'thrust-level-editor',
       cwd: path.join(__dirname, '../packages/level-editor'),
       script: 'server/index.ts',
-      interpreter: 'node', // Node 22.18+ runs .ts itself; stops pm2 picking another runner
+      // Node 22.18+ runs .ts itself. update.sh sets THRUST_NODE to the editor's own
+      // Node (packages/level-editor/.node-version), so other pm2 apps keep theirs.
+      interpreter: process.env.THRUST_NODE || 'node',
       instances: 1,
       exec_mode: 'fork',
       max_memory_restart: '400M',

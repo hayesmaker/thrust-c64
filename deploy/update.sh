@@ -10,8 +10,11 @@ main() {
   local app=$root/packages/level-editor
   cd "$root"
 
-  # pm2/node installed with nvm are not on PATH in a plain ssh command
-  [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
+  # node from fnm (or nvm) is not on PATH in a plain ssh command
+  local fnm; fnm=$(command -v fnm || ls "$HOME/.local/share/fnm/fnm" "$HOME/.fnm/fnm" 2>/dev/null | head -1 || true)
+  if [ -n "$fnm" ]; then eval "$("$fnm" env --shell bash)"
+  elif [ -s "$HOME/.nvm/nvm.sh" ]; then . "$HOME/.nvm/nvm.sh"
+  fi
 
   if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo "the checkout has local changes: not deploying"; git status --short; exit 1
@@ -25,6 +28,14 @@ main() {
   trap 'echo "❌ failed: checkout restored, the running version is unchanged"; git checkout -q --detach "$prev"' ERR
 
   cd "$app"
+  # the editor's own Node (.node-version), whatever the other pm2 apps use
+  if [ -n "$fnm" ]; then fnm use --install-if-missing --silent-if-unchanged
+  elif command -v nvm >/dev/null; then nvm install "$(cat .node-version)" >/dev/null
+  fi
+  # pm2 gets the real path: fnm's per-shell links are temporary
+  export THRUST_NODE; THRUST_NODE=$(readlink -f "$(command -v node)")
+  node -e 'const [a,b]=process.versions.node.split(".").map(Number); if (a<22||(a===22&&b<18)) { console.error("Node "+process.version+" is too old (needs 22.18+)"); process.exit(1) }'
+  echo "→ node $(node -v) ($THRUST_NODE)"
   echo "→ npm ci"; npm ci --no-audit --no-fund
   echo "→ build"; npx tsc --noEmit; npx vite build --outDir dist.new --emptyOutDir --logLevel warn
   echo "→ tests (KickAssembler in the sandbox)"
