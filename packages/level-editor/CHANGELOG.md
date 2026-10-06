@@ -1,5 +1,16 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* "play full screen" starts ticked on Android and iOS devices and anything
+  with a touch screen (handhelds such as the Retroid can report a mouse-like
+  pointer).
+* When the browser refuses full screen, the player says why and a tap on the
+  game tries again (until then the game covers the page).
+* Full screen: a **Mute** button beside Pause.
+* Checks: a start below restart 1 (levels played upwards) is a note, not a
+  warning; the guide explains that crashes then restart at the start.
+
 ## 0.3.3
 
 - Build & play plays over the map again, as before 0.3 (Rebuild, Restart,

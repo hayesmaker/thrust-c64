@@ -53,7 +53,12 @@ export function validateLevel(l: Level): Issue[] {
   if (r.length === 0) add('error', 'at least one restart point (the start) is needed');
   r.forEach((p, i) => {
     const t: Target = { kind: 'restart', index: i };
-    if (i > 0 && p.shipY < r[i - 1].shipY)
+    // the game picks the restart by depth: the first point (from R0) at or
+    // below the ship, then one back. A start at the bottom is fine, but then
+    // R0 is found first and every crash restarts at the start
+    if (i === 1 && p.shipY < r[0].shipY)
+      add('info', 'the start is below restart 1: after a crash the ship restarts at the start (restart points are picked by depth, see the guide)', t);
+    else if (i > 0 && p.shipY < r[i - 1].shipY)
       add('warn', `restart ${i} is above restart ${i - 1}: they should go down in order`, t);
     if (isSolid(left, right, p.shipX, p.shipY)) add('warn', `restart ${i}: ship starts inside rock`, t);
   });

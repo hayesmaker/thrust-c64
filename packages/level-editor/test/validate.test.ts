@@ -45,7 +45,8 @@ describe('validateLevel', () => {
     const msgs = validateLevel(l).map((i) => `${i.severity}: ${i.message}`);
     expect(msgs).toContain('error: object 0 must be the pod stand');
     expect(msgs.some((m) => m.startsWith('error: object 13 (fuel) must be among the first 12'))).toBe(true);
-    expect(msgs.some((m) => m.includes('restart 1 is above restart 0'))).toBe(true);
+    expect(msgs.some((m) => m.startsWith('info: the start is below restart 1'))).toBe(true);
+    expect(msgs.some((m) => m.includes('restart 2 is above restart 1'))).toBe(true);
     expect(msgs.some((m) => m.includes('object 13 (fuel) has no terrain to rest on'))).toBe(true);
   });
 });

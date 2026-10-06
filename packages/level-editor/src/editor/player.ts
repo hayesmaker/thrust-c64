@@ -9,7 +9,7 @@
 // * windowed: over the map, with the panel beside it; a bar above the game
 //   (title, status, Rebuild, Restart, ...) and the keys below it.
 // * full screen: the browser's full screen where it allows it, else covering
-//   the page. The game fills the screen; Close, Pad and Pause float over it,
+//   the page. The game fills the screen; Close, Pad, Pause and Mute float over it,
 //   and short messages fade.
 // The virtual gamepad (touch) and physical gamepads hold Thrust's keys
 // through a KeyMixer (controls.ts).
@@ -47,6 +47,8 @@ export class PlayerOverlay {
   private last: { prg: Uint8Array; title: string } | null = null;
   private muted = false;
   private messageTimer = 0;
+  /** why the browser's full screen was refused, shown with every message until it works */
+  private fsNote = '';
   private player: C64Player | null = null;
   private paused = false;
   private padShown: boolean;
@@ -76,6 +78,7 @@ export class PlayerOverlay {
           <button id="play-x" title="back to the editor" aria-label="Close">✕</button>
           <button id="play-pad" title="show or hide the on-screen gamepad">Pad</button>
           <button id="play-pause" title="pause (F5) / resume (F7)">Pause</button>
+          <button id="play-mute-x" title="sound on / off">Mute</button>
         </div>
         <div id="play-message" hidden></div>
       </div>
@@ -103,11 +106,15 @@ export class PlayerOverlay {
     $('play-x').onclick = () => this.close();
     $('play-rebuild').onclick = () => this.onRebuild();
     $('play-restart').onclick = () => this.last && this.play(this.last.prg, this.last.title);
-    $('play-mute').onclick = (e) => {
+    // windowed: "Sound off / on" in the bar; full screen: "Mute", lit while muted
+    const mute = () => {
       this.muted = !this.muted;
       this.player?.audio.setMuted(this.muted);
-      (e.target as HTMLElement).textContent = this.muted ? 'Sound on' : 'Sound off';
+      $('play-mute').textContent = this.muted ? 'Sound on' : 'Sound off';
+      $('play-mute-x').classList.toggle('on', this.muted);
     };
+    $('play-mute').onclick = mute;
+    $('play-mute-x').onclick = mute;
     let pref: string | null = null;
     try {
       pref = localStorage.getItem(PAD_KEY);
@@ -122,7 +129,16 @@ export class PlayerOverlay {
     this.showPad(this.padShown);
     this.mountPad();
     // left full screen (Esc, the system back gesture): a tap on the game goes back
-    this.canvas.addEventListener('pointerdown', () => this.isOpen && this.isFull && !fullscreenElement() && this.enterFullscreen());
+    // (any tap in the player: some browsers only allow it from a tap there)
+    this.root.addEventListener('pointerdown', () => this.isOpen && this.isFull && !fullscreenElement() && this.enterFullscreen(), true);
+    const onFs = () => {
+      if (fullscreenElement() && this.fsNote) {
+        this.fsNote = '';
+        this.setStatus('');
+      }
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
     // no key stays held when the page goes to the background
     document.addEventListener('visibilitychange', () => document.hidden && this.keys.releaseAll());
   }
@@ -137,9 +153,11 @@ export class PlayerOverlay {
     this.status.textContent = text;
     clearTimeout(this.messageTimer);
     if (!this.isFull) return void (this.message.hidden = true);
-    this.message.textContent = text;
-    this.message.hidden = !text;
-    if (text && !stay) this.messageTimer = window.setTimeout(() => (this.message.hidden = true), MESSAGE_MS);
+    const full = [text, this.fsNote].filter(Boolean).join('\n');
+    this.message.textContent = full;
+    this.message.hidden = !full;
+    if (this.fsNote) stay = true;
+    if (full && !stay) this.messageTimer = window.setTimeout(() => (this.message.hidden = true), MESSAGE_MS);
   }
 
   /**
@@ -214,6 +232,7 @@ export class PlayerOverlay {
     if (fullscreenElement() === this.root) exitFullscreen();
     document.body.classList.remove('playing');
     this.root.classList.remove('full');
+    this.fsNote = '';
     this.setStatus('');
     this.root.hidden = true;
     await this.stopPlayer();
@@ -230,11 +249,22 @@ export class PlayerOverlay {
   private enterFullscreen(): void {
     if (fullscreenElement()) return;
     const el = this.root as FullscreenEl;
+    // refused: the overlay still covers the page; say why, and that a tap retries
+    const refused = (e: unknown) => {
+      if (!this.isOpen || fullscreenElement()) return;
+      const why = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      this.fsNote = `The browser refused full screen (${why}). Tap the game to try again.`;
+      this.setStatus(this.status.textContent ?? '');
+    };
+    if (!el.requestFullscreen && !el.webkitRequestFullscreen) {
+      this.fsNote = 'This browser cannot go full screen: the game covers the page instead.';
+      return;
+    }
     try {
       const r = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen?.();
-      if (r instanceof Promise) r.catch(() => {});
-    } catch {
-      // not allowed here: the overlay covers the page anyway
+      if (r instanceof Promise) r.catch(refused);
+    } catch (e) {
+      refused(e);
     }
   }
 

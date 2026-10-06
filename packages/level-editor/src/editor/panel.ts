@@ -464,7 +464,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
   // full screen by default on phones and tablets; the choice is remembered
   const fullscreen = $<HTMLInputElement>('p-fullscreen');
   const fsPref = readPref(FULLSCREEN_KEY);
-  fullscreen.checked = fsPref ? fsPref === 'on' : matchMedia('(pointer: coarse)').matches;
+  fullscreen.checked = fsPref ? fsPref === 'on' : isHandheld();
   fullscreen.onchange = () => writePref(FULLSCREEN_KEY, fullscreen.checked ? 'on' : 'off');
   $('p-play').onclick = () => runBuild(true);
   player.onRebuild = () => runBuild(true);
@@ -935,6 +935,13 @@ function renderBuildErrors(r: BuildResult, src: { levelsAsm: string; tablesAsm: 
   const list = r.errors.map((e) => `<li class="error">${esc(where(e))}: ${esc(e.message)}</li>`).join('');
   return `<div class="warn">Build failed</div><ul class="issues">${list || '<li class="error">see the log</li>'}</ul>
     <details><summary>KickAssembler log</summary><pre>${esc(r.log)}</pre></details>`;
+}
+
+/** Phones, tablets and handhelds (which may report a fine pointer, e.g. a
+ *  handheld with a mouse-like controller, or a big screen in "desktop site"). */
+function isHandheld(): boolean {
+  const any = (q: string) => matchMedia(q).matches;
+  return any('(pointer: coarse)') || any('(any-pointer: coarse)') || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
 function readPref(key: string): string | null {
