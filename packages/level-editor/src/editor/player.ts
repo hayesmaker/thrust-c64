@@ -9,7 +9,7 @@
 // * windowed: over the map, with the panel beside it; a bar above the game
 //   (title, status, Rebuild, Restart, ...) and the keys below it.
 // * full screen: the browser's full screen where it allows it, else covering
-//   the page. The game fills the screen; Close, Pad and Pause float over it,
+//   the page. The game fills the screen; Close, Pad, Pause and Mute float over it,
 //   and short messages fade.
 // The virtual gamepad (touch) and physical gamepads hold Thrust's keys
 // through a KeyMixer (controls.ts).
@@ -78,6 +78,7 @@ export class PlayerOverlay {
           <button id="play-x" title="back to the editor" aria-label="Close">✕</button>
           <button id="play-pad" title="show or hide the on-screen gamepad">Pad</button>
           <button id="play-pause" title="pause (F5) / resume (F7)">Pause</button>
+          <button id="play-mute-x" title="sound on / off">Mute</button>
         </div>
         <div id="play-message" hidden></div>
       </div>
@@ -105,11 +106,15 @@ export class PlayerOverlay {
     $('play-x').onclick = () => this.close();
     $('play-rebuild').onclick = () => this.onRebuild();
     $('play-restart').onclick = () => this.last && this.play(this.last.prg, this.last.title);
-    $('play-mute').onclick = (e) => {
+    // windowed: "Sound off / on" in the bar; full screen: "Mute", lit while muted
+    const mute = () => {
       this.muted = !this.muted;
       this.player?.audio.setMuted(this.muted);
-      (e.target as HTMLElement).textContent = this.muted ? 'Sound on' : 'Sound off';
+      $('play-mute').textContent = this.muted ? 'Sound on' : 'Sound off';
+      $('play-mute-x').classList.toggle('on', this.muted);
     };
+    $('play-mute').onclick = mute;
+    $('play-mute-x').onclick = mute;
     let pref: string | null = null;
     try {
       pref = localStorage.getItem(PAD_KEY);

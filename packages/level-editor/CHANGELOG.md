@@ -7,6 +7,7 @@
   pointer).
 * When the browser refuses full screen, the player says why and a tap on the
   game tries again (until then the game covers the page).
+* Full screen: a **Mute** button beside Pause.
 
 ## 0.3.3
 

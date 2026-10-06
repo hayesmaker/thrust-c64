@@ -434,8 +434,9 @@ map, the buttons above the game:
 and in the game's top-left corner **Pad** (show or hide the on-screen pad) and
 **Pause / Resume**.
 
-Full screen, the game fills the screen and only three small buttons float in
-its top-left corner: **✕** (close), **Pad** and **Pause / Resume**. To try an
+Full screen, the game fills the screen and only four small buttons float in
+its top-left corner: **✕** (close), **Pad**, **Pause / Resume** and **Mute**
+(lit while the sound is off). To try an
 edit, close, edit and **Build & play** again. If the browser leaves full screen
 (Esc on a computer, or the back gesture on a phone), tap the game to go full
 screen again. On an iPhone, where pages cannot go full screen, the game covers

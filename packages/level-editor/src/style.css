@@ -151,11 +151,11 @@ textarea { width: 100%; box-sizing: border-box; background: var(--bg); color: va
 #play.full .play-top, #play.full .play-help { display: none; }
 #play.full .play-screen { position: absolute; inset: 0; width: auto; max-height: none; aspect-ratio: auto; }
 body.playing { overflow: hidden; }
-/* over the game: windowed only Pad and Pause (Close is in the bar above) */
+/* over the game: windowed only Pad and Pause (Close and Sound are in the bar above) */
 .play-bar { position: absolute; top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left));
   display: flex; gap: 6px; z-index: 1; }
 #play:not(.full) .play-bar { top: 8px; left: 8px; }
-#play:not(.full) #play-x { display: none; }
+#play:not(.full) #play-x, #play:not(.full) #play-mute-x { display: none; }
 .play-bar button { padding: 6px 10px; min-width: 40px; min-height: 36px; background: #0008; border-color: #ffffff30;
   color: #ffffffb0; opacity: .6; }
 .play-bar button:hover, .play-bar button:focus-visible { opacity: 1; }
