@@ -242,10 +242,11 @@ stand, reactor, fuel, then the rest).
 
 ## 7. Restart points
 
-Restart points are where the ship comes back after losing a life: the last
-restart point above the deepest place it reached (if it was carrying the pod,
-the next one down instead). `start` (restart point 0) is where the level
-begins.
+Restart points are where the ship comes back after losing a life. The game
+goes through them in order, from `start`, finds the first one at or below
+where the ship was when it crashed, and uses the one before it (if it was
+carrying the pod, that one itself). `start` (restart point 0) is where the
+level begins.
 
 * **Drag** a cross to move it. The dashed box (roughly the screen at that
   moment) moves with it.
@@ -257,6 +258,11 @@ begins.
 
 Keep restart points in open space (not in rock) and in order from top to
 bottom; Checks warns otherwise.
+
+**Starting at the bottom.** You can put `start` at the bottom of the cave and
+have the player work upwards. But the game picks restart points by depth, so it
+finds `start` first: after a crash the ship always goes back to the start, and
+other restart points are not used. Checks notes this instead of warning.
 
 ## 8. Gravity and colours
 

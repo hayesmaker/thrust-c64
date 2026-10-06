@@ -8,6 +8,8 @@
 * When the browser refuses full screen, the player says why and a tap on the
   game tries again (until then the game covers the page).
 * Full screen: a **Mute** button beside Pause.
+* Checks: a start below restart 1 (levels played upwards) is a note, not a
+  warning; the guide explains that crashes then restart at the start.
 
 ## 0.3.3
 

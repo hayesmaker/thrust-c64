@@ -29,7 +29,9 @@ of the mod with KickAssembler and runs it in the embedded c64-ready emulator,
 starting on the level you are editing (untick "start the game on this level"
 for the normal game); "play full screen" for the whole screen. Keys in the game: Space start / shield, A S rotate,
 Shift thrust, Return fire, F5/F7 pause/resume, Esc abort. The on-screen pad
-(touch) and gamepads press the same keys (`src/editor/controls.ts`).
+(touch) and gamepads press the same keys (`src/editor/controls.ts`). For fun:
+[how Claude beat mission 1](docs/autopilot-run.md) with an autopilot that
+reads the C64's memory and presses those keys.
 
 The editor never writes the mod. "Assembler files" offers the game as the two
 level files (to drop into the mod and build by hand) and the terrain `.byte`
