@@ -7,7 +7,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { createApi } from './api.ts';
-import { C64_ASSETS, DIST_DIR, MOD_SRC } from './paths.ts';
+import { C64_ASSETS, DIST_DIR, MOD_SRC, TEMPLATE } from './paths.ts';
 
 const PORT = Number(process.env.PORT ?? 5180);
 const HOST = process.env.HOST ?? '127.0.0.1';
@@ -26,7 +26,7 @@ if (!existsSync(join(DIST_DIR, 'index.html'))) {
   process.exit(1);
 }
 
-const api = createApi({ modDir: MOD_SRC });
+const api = createApi({ modDir: MOD_SRC, template: TEMPLATE });
 
 createServer((req, res) => {
   api(req, res, () => {

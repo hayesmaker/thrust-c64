@@ -81,6 +81,26 @@ describe('saveProject', () => {
     expect(q.levels[3].left.raw).toEqual(p.levels[3].left.raw);
   });
 
+  it('unedited walls from other sources are written (original levels into the mod)', () => {
+    const orig = loadProject(ORIG.levels, ORIG.tables);
+    const p = loadProject(MOD.levels, MOD.tables);
+    p.levels = orig.levels;
+    const out = saveProject(p);
+    const q = loadProject(out.levelsAsm, out.tablesAsm);
+    for (let n = 0; n < 6; n++) expect(decodeLevel(q.levels[n])).toEqual(decodeLevel(orig.levels[n]));
+  });
+
+  it('examples/template.json holds the original levels (remake: npm run mod-to-game -- --original)', () => {
+    const t = JSON.parse(read('packages/thrusty-levels/examples/template.json'));
+    const orig = loadProject(ORIG.levels, ORIG.tables);
+    const fromSources = loadProject(t.levelsAsm, t.tablesAsm);
+    for (let n = 0; n < 6; n++) {
+      expect(t.levels[n]).toEqual(orig.levels[n]);
+      expect(fromSources.levels[n]).toEqual(orig.levels[n]);
+    }
+    expect(t.roundCycle).toEqual(orig.roundCycle);
+  });
+
   it('objects, restart points and settings round trip', () => {
     const p = loadProject(ORIG.levels, ORIG.tables);
     const l = p.levels[1];

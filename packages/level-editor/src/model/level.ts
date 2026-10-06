@@ -124,6 +124,7 @@ export function decodeLevel(l: Level, rows = levelRows(l)): { left: number[]; ri
 
 const T = (n: number, s: string) => `terrain_data_level_${n}_${s}`;
 const O = (n: number, s: string) => `level_${n}_${s}`;
+const sameBytes = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
 
 function readWall(doc: AsmDoc, n: number, c: string, s: string, start: number): Wall {
   const raw = { counts: blockBytes(doc, T(n, c)), steps: blockBytes(doc, T(n, s)) };
@@ -229,8 +230,9 @@ export function saveProject(p: Project, opts: SaveOptions = {}): { levelsAsm: st
       [l.left, 'A', 'B'],
       [l.right, 'C', 'D'],
     ] as const) {
-      if (w.raw) continue; // unedited: keep the source exactly as it was
-      const t = encodeWall(w.points);
+      // unedited and already in the source: keep the source exactly as it was
+      if (w.raw && sameBytes(blockBytes(L, T(n, c)), w.raw.counts) && sameBytes(blockBytes(L, T(n, s)), w.raw.steps)) continue;
+      const t = w.raw ?? encodeWall(w.points);
       writeBlock(L, T(n, c), t.counts);
       writeBlock(L, T(n, s), t.steps);
     }

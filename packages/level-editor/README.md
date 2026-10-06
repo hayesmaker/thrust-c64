@@ -14,8 +14,12 @@ npm run serve     # or: production build served by server/index.ts at http://127
 npm test          # tests (KickAssembler ones need java and /opt/KickAss.jar; KICKASS=... overrides)
 ```
 
-The mod's `packages/thrusty-levels/src/levels.asm` + `level_tables.asm` are a
-read-only **template**: the editor starts a new game from them. A game is saved
+New games start from the **template**, `packages/thrusty-levels/examples/template.json`
+(`GET /api/template`; `THRUST_TEMPLATE` overrides): the original six levels written
+into the mod's `levels.asm` + `level_tables.asm`. Without it, new games start from
+the mod's own level files. Remake it after changing the mod's level files:
+`npm run mod-to-game -- --original ../thrusty-levels/examples/template.json thrust`
+(without `--original`: a game file of the mod's own levels). A game is saved
 as one JSON file (Game section: Save / Save as / Open / New from template;
 in Chrome and Edge, Save writes back to the same file via the File System
 Access API, elsewhere it downloads `<name>.json`). Edits also autosave in the
@@ -33,7 +37,7 @@ Game file: `{format: "thrust-level-editor/game", version: 1, name, levelsAsm,
 tablesAsm, levels, level}`: the levels plus the level files they patch, so a
 game builds even after the template changes.
 
-To make a saved game the new template: `npm run game-to-mod -- my-game.json`
+To write a saved game into the mod: `npm run game-to-mod -- my-game.json`
 writes its levels into the mod's `levels.asm` / `level_tables.asm` (the rest
 of those files is kept), then `./packages/thrusty-levels/build.sh`.
 
@@ -58,7 +62,8 @@ also treats a failed `.assert` as an error).
 
 | Route | |
 |---|---|
-| `GET /api/source` | the template: the two files + a hash + the memory layout |
+| `GET /api/source` | the mod's two level files + a hash + the memory layout |
+| `GET /api/template` | the game new games start from (404: none) |
 | `POST /api/build` | `{levelsAsm, tablesAsm, startLevel?}` -> `{ok, errors, log, files, id}` |
 | `GET /api/builds/<id>/<file>` | `thrust.prg`, `play.prg` (starts on `startLevel`), `.sym`, `.vs`, `kickass.log` |
 

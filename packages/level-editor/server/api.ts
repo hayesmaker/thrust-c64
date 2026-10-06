@@ -1,7 +1,8 @@
 // Build API for the level editor (plain Node, no dependencies). Used as
 // middleware by the Vite dev server (vite.config.ts) and by server/index.ts.
 //
-//   GET  /api/source              the template: the mod's levels.asm + level_tables.asm (+ hash)
+//   GET  /api/source              the mod's levels.asm + level_tables.asm (+ hash, memory layout)
+//   GET  /api/template            the game file new games start from (the original levels)
 //   POST /api/build               build a temp copy of the mod with the posted level files
 //   GET  /api/builds/<id>/<file>  thrust.prg, play.prg, thrust.sym, thrust.vs, kickass.log
 //
@@ -17,6 +18,8 @@ import { join } from 'node:path';
 export interface ApiOptions {
   /** packages/thrusty-levels/src */
   modDir: string;
+  /** game file new games start from (GET /api/template); none: from modDir's levels */
+  template?: string;
   kickass?: string;
   /** the command that runs KickAssembler's jar: java, or a sandbox wrapper (deploy/kickass-sandbox.sh) */
   java?: string;
@@ -191,6 +194,11 @@ export function createApi(o: ApiOptions) {
       if (url.pathname === '/api/source' && req.method === 'GET') {
         const layout = readLayout(readFileSync(join(o.modDir, 'thrust.asm'), 'utf8'));
         return json(res, 200, { name: 'packages/thrusty-levels/src', ...readSource(), layout });
+      }
+      if (url.pathname === '/api/template' && req.method === 'GET') {
+        if (!o.template || !existsSync(o.template)) return notFound(res);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+        return res.end(readFileSync(o.template));
       }
       if (url.pathname === '/api/build' && req.method === 'POST') {
         const body = await readJson(req);

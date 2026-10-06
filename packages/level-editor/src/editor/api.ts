@@ -1,6 +1,7 @@
 // Client for the build API (server/api.ts).
 
 import type { BuildResult, Layout } from '../../server/api.ts';
+import type { GameFile } from './store';
 
 export type { BuildError, BuildResult } from '../../server/api.ts';
 
@@ -41,6 +42,13 @@ export interface Source {
 }
 
 export const getSource = () => call<Source>('GET', '/api/source');
+
+/** The game new games start from (the original levels); null: the server has none. */
+export const getTemplate = () =>
+  call<GameFile>('GET', '/api/template').catch((e) => {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  });
 
 
 export const build = (levelsAsm: string, tablesAsm: string, startLevel: number | null) =>

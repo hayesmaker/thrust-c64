@@ -48,7 +48,7 @@ main() {
   trap - ERR
 
   for _ in 1 2 3 4 5 6 7 8 9 10; do
-    curl -fsS -o /dev/null http://127.0.0.1:5180/api/source && { echo "✅ $ref is live"; return; }
+    curl -fs -o /dev/null http://127.0.0.1:5180/api/source && { echo "✅ $ref is live"; return; }
     sleep 1
   done
   echo "⚠️  pm2 reloaded but the server does not answer: pm2 logs thrust-level-editor"; exit 1

@@ -270,6 +270,15 @@ export class Store {
     this.changed(false);
   }
 
+  /** A new, unsaved game from a template game file. */
+  fromTemplate(t: GameFile, name: string): void {
+    this.fromJSON(t);
+    this.name = name;
+    this.level = 0;
+    this.savedState = this.state();
+    this.changed(false);
+  }
+
   /** Restore the game being edited when the page was closed. */
   restoreAutosave(): boolean {
     try {

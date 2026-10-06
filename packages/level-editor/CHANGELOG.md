@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+* New games start from the original six levels (`thrusty-levels/examples/template.json`,
+  served at `/api/template`) instead of the mod's draft level 0.
+* `npm run mod-to-game`: write a game file from the mod's level files (`--original`:
+  with the original game's levels).
+* Fix: saving levels into other level files (game-to-mod, the template) wrote unedited
+  walls as the target file's walls instead of the level's own.
 * Hosting at thrust.hayesmaker64.com: deploy kit in `deploy/` (pm2, nginx, provisioning).
 * Build server: KickAssembler can run through a sandbox wrapper (`KICKASS_JAVA`); builds
   have a time limit (`BUILD_TIMEOUT_MS`) and a queue cap (`BUILD_MAX_QUEUE`, 503 when full);

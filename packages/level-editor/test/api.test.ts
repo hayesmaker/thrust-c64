@@ -11,6 +11,7 @@ import { createApi, parseKickAssErrors, patchStartLevel, readLayout, sourceHash 
 
 const ROOT = join(import.meta.dirname, '../../..');
 const KICKASS = process.env.KICKASS ?? '/opt/KickAss.jar';
+const TEMPLATE = join(ROOT, 'packages/thrusty-levels/examples/template.json');
 const canBuild = (() => {
   try {
     execFileSync('java', ['-version'], { stdio: 'ignore' });
@@ -68,7 +69,7 @@ describe('HTTP API', () => {
     tmp = mkdtempSync(join(tmpdir(), 'thrust-api-'));
     modDir = join(tmp, 'mod');
     cpSync(join(ROOT, 'packages/thrusty-levels/src'), modDir, { recursive: true });
-    const api = createApi({ modDir, buildsDir: join(tmp, 'builds'), kickass: KICKASS });
+    const api = createApi({ modDir, buildsDir: join(tmp, 'builds'), kickass: KICKASS, template: TEMPLATE });
     server = createServer((req, res) => api(req, res));
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -97,6 +98,18 @@ describe('HTTP API', () => {
     expect(r.status).toBe(404);
     expect(readFileSync(join(modDir, 'levels.asm'), 'utf8')).toBe(s.levelsAsm);
   });
+
+  it('GET /api/template returns the template game', async () => {
+    const t = await get('/api/template');
+    expect(t).toEqual(JSON.parse(readFileSync(TEMPLATE, 'utf8')));
+  });
+
+  it.skipIf(!canBuild)('the template game builds', async () => {
+    const t = await get('/api/template');
+    const { body: b } = await send('POST', '/api/build', { levelsAsm: t.levelsAsm, tablesAsm: t.tablesAsm });
+    expect(b.errors).toEqual([]);
+    expect(b.ok).toBe(true);
+  }, 60_000);
 
   it('rejects unknown routes and files', async () => {
     expect((await fetch(base + '/api/nope')).status).toBe(404);
@@ -163,6 +176,13 @@ describe('build limits', () => {
     server.close();
     expect(b.ok).toBe(false);
     expect(b.errors[0].message).toMatch(/longer than 0\.3 s/);
+  });
+
+  it('GET /api/template is 404 without a template', async () => {
+    const { server, base } = await serve(createApi({ modDir, buildsDir: join(tmp, 'b3') }));
+    const r = await fetch(base + '/api/template');
+    server.close();
+    expect(r.status).toBe(404);
   });
 
   it('answers 503 when the queue is full', async () => {

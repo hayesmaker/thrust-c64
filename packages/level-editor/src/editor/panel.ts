@@ -18,7 +18,7 @@ import { ANGLE_NAMES, GUN_SPREAD, gunArc, gunBase, gunParam, gunSpread, isGun, s
 import { pointsToRuns, segmentSteps } from '../model/terrain';
 import { AUTHOR_MAX, TITLE_MAX, authorText, fontText, fontTyping, titleText } from '../model/title';
 import { type MemState, levelBytes, memoryAreas, memoryIssues, validateLevel, worstState } from '../model/validate';
-import { type BuildError, type BuildResult, type Source, build, buildFileUrl, fetchBuildFile, getSource } from './api';
+import { type BuildError, type BuildResult, type Source, build, buildFileUrl, fetchBuildFile, getSource, getTemplate } from './api';
 import { download, terrainAsm } from './export';
 import { confirmDiscard, forgetFile, openGameFile, pickGameFile, saveGame } from './files';
 import { swatchColour } from './look';
@@ -69,7 +69,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       </div>
       <div class="row">
         <button id="p-open-json" title="Ctrl+O: open a game (.json)">Open…</button>
-        <button id="p-new" title="a new game from the template levels (packages/thrusty-levels/src)">New from template</button>
+        <button id="p-new" title="a new game from the template: the original six levels">New from template</button>
       </div>
       <input type="file" id="p-file-json" accept=".json,application/json" hidden>
     </section>
@@ -868,11 +868,14 @@ export function toast(msg: string): void {
   toastTimer = window.setTimeout(() => t.classList.remove('show'), 2600);
 }
 
+/** A new game: the template game (the original levels) if the server has
+ *  one, else the mod's own levels. */
 export async function loadModSource(store: Store): Promise<void> {
-  const s = await getSource();
+  const [s, t] = await Promise.all([getSource(), getTemplate()]);
   applyLayout(store, s);
   forgetFile();
-  store.load(loadProject(s.levelsAsm, s.tablesAsm), DEFAULT_NAME);
+  if (t) store.fromTemplate(t, DEFAULT_NAME);
+  else store.load(loadProject(s.levelsAsm, s.tablesAsm), DEFAULT_NAME);
 }
 
 /** The layout belongs to the mod source on disk (thrust.asm), not to the

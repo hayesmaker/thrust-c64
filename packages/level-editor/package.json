@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "serve": "vite build && node server/index.ts",
-    "game-to-mod": "node scripts/game-to-mod.ts"
+    "game-to-mod": "node scripts/game-to-mod.ts",
+    "mod-to-game": "node scripts/mod-to-game.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

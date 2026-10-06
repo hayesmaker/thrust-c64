@@ -5,8 +5,8 @@ Firebird 1986) in your browser: drag the cave walls into shape, place guns,
 fuel and the pod, set where the ship restarts, pick gravity and colours, and
 press one button to play your level in a C64 emulator.
 
-It is built on the **thrusty-levels** mod (`packages/thrusty-levels`). The
-mod's levels are the **template**: every new game starts as a copy of them.
+It is built on the **thrusty-levels** mod (`packages/thrusty-levels`). Every
+new game starts as a copy of the **template**: the original game's six levels.
 Each game you make is saved as **one JSON file**, wherever you like, so you can
 keep as many games as you want and never have to touch the mod's source files.
 Building turns a game into a normal C64 program (`.prg`).
@@ -51,7 +51,7 @@ npm run dev
 ```
 
 Open the address it prints (normally <http://localhost:5173>). The editor
-starts a new game from the template straight away: the six levels of the mod,
+starts a new game from the template straight away: the original six levels,
 ready to change. To carry on with a game you saved, click **Open…** (see
 [Saving your work](#13-saving-your-work)).
 
@@ -445,7 +445,7 @@ The line under the fields shows both lines as the game will show them.
 | **Save** (Ctrl+S) | save the game. |
 | **Save as…** (Ctrl+Shift+S) | save it as a new file, e.g. to try something out without changing the original. |
 | **Open…** (Ctrl+O) | open a saved game. You can also drop a `.json` file on the page. |
-| **New from template** | start a new game from the mod's levels. |
+| **New from template** | start a new game from the original six levels. |
 
 Opening a game or starting a new one asks first if you have unsaved changes.
 
@@ -475,7 +475,6 @@ hand or sharing levels as source code:
 
 To make the game part of the mod itself, put the two downloaded files into
 `packages/thrusty-levels/src` and run `./packages/thrusty-levels/build.sh`.
-They then become the template for new games.
 
 ## 14. Keyboard and mouse reference
 
