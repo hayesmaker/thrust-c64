@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.3.0
 
 * Touch screens: pinch zoom and two-finger pan; tap selects, drag moves
   relative to the finger (no jump) with a loupe showing the spot; hold a wall
