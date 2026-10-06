@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.3.4
 
 * "play full screen" starts ticked on Android and iOS devices and anything
   with a touch screen (handhelds such as the Retroid can report a mouse-like
