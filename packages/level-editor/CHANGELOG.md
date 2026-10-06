@@ -1,5 +1,12 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* New games start without a name, and Build / Build & play ask for one first, so
+  games don't all come out titled "MY THRUST GAME". Games saved with that old
+  default name open without a name.
+* Deploy scripts take versions with or without the "v" (`0.2.4` or `v0.2.4`).
+
 ## 0.2.3
 
 * Fix: `deploy.sh` could not find pm2 when it belongs to an nvm Node; `deploy.sh`

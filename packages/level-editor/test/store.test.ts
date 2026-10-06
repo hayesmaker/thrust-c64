@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { fileNameFor } from '../src/editor/files';
 import { DEFAULT_NAME, GAME_FORMAT, Store } from '../src/editor/store';
 import { loadProject } from '../src/model/level';
+import { nameProblem } from '../src/model/title';
 
 const ROOT = join(import.meta.dirname, '../../..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
@@ -129,5 +130,35 @@ describe('game files', () => {
   it('names files after the game', () => {
     expect(fileNameFor('My Thrust game!')).toBe('my-thrust-game.json');
     expect(fileNameFor('  ')).toBe('thrust-game.json');
+  });
+});
+
+describe('game name', () => {
+  const TEMPLATE = JSON.parse(read('packages/thrusty-levels/examples/template.json'));
+
+  it('a new game from the template has no name', () => {
+    const s = new Store();
+    s.fromTemplate(TEMPLATE, DEFAULT_NAME);
+    expect(s.name).toBe('');
+    expect(s.dirty).toBe(false);
+  });
+
+  it('a game saved with the old default name opens without one', () => {
+    const s = new Store();
+    s.fromJSON({ ...TEMPLATE, name: 'my thrust game' });
+    expect(s.name).toBe('');
+    s.fromJSON({ ...TEMPLATE, name: 'Big Caves' });
+    expect(s.name).toBe('Big Caves');
+  });
+
+  it('builds need a name the title screen can show', () => {
+    expect(nameProblem('')).toMatch(/name/);
+    expect(nameProblem('  ')).toMatch(/name/);
+    expect(nameProblem('!!!')).toMatch(/name/); // nothing the font can show
+    expect(nameProblem('Big Caves')).toBeNull();
+  });
+
+  it('an unnamed game still saves to a file name', () => {
+    expect(fileNameFor('')).toBe('thrust-game.json');
   });
 });

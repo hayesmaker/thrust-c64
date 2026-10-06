@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # From your own machine: deploy a pushed tag (or branch) to the server.
-#   ./deploy/deploy.sh v0.2.0
+#   ./deploy/deploy.sh v0.2.0      (or 0.2.0)
 # DEPLOY_HOST is an ssh host, best an alias in ~/.ssh/config (default: thrust-host),
 # so no address or user name lives in this repo.
 set -euo pipefail
 REF=${1:?usage: deploy/deploy.sh <tag or branch>}
+[[ $REF =~ ^[0-9]+\.[0-9] ]] && REF=v$REF # 0.2.0 means the tag v0.2.0
 HOST=${DEPLOY_HOST:-thrust-host}
 DIR=${DEPLOY_DIR:-/srv/thrust-c64}
 
