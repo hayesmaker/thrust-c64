@@ -498,6 +498,33 @@ To make the game part of the mod itself, put the two downloaded files into
 | Ctrl + O | open a game |
 | `?` | open this guide (Esc closes it) |
 
+### Touch screens
+
+On a phone or tablet the canvas works with your fingers, and a toolbar along
+its bottom stands in for the keyboard. Handles and touch targets are bigger
+while you edit by touch. Use a mouse again and the editor goes back to normal.
+
+| Touch | Action |
+|-------|--------|
+| tap | select what is under your finger (tap empty space: deselect) |
+| drag | move it: it moves as far as your finger does, so it doesn't jump under your finger. A magnifier (loupe) above your finger shows exactly where it is |
+| drag empty space | pan |
+| two fingers | pan, and pinch to zoom |
+| hold a wall line | add a point there (you feel a short buzz on phones that can), then drag it |
+
+| Toolbar | Does |
+|---------|------|
+| ↶ ↷ | undo, redo |
+| Fit, − + | fit the level, zoom out / in |
+| ← ↑ ↓ → | nudge the selection one unit (hold to repeat) |
+| ×8 | nudges go 8 units at a time (Shift + arrows) |
+| Step | points: keep an even slope; door: move sideways only (Shift while dragging) |
+| Free | objects don't snap to the terrain (Alt while dragging) |
+| Delete | delete the selection |
+
+For exact positions, pinch in close, or type them into the Selection section
+of the panel.
+
 ## 15. Troubleshooting
 
 **"no build API here" / "the editor server is not running".** Building,

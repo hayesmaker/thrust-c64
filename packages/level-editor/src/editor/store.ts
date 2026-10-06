@@ -162,6 +162,13 @@ export class Store {
     if (this.undoStack[this.undoStack.length - 1] === this.snapshot()) this.undoStack.pop();
   }
 
+  /** Put back the last checkpoint and drop it (a gesture cut short, e.g. a
+   *  touch drag turned into a pinch). Unlike undo, nothing goes on redo. */
+  abandonCheckpoint(): void {
+    const s = this.undoStack.pop();
+    if (s !== undefined && s !== this.snapshot()) this.restore(s);
+  }
+
   canUndo(): boolean {
     return this.undoStack.length > 0;
   }

@@ -1,5 +1,14 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* Touch screens: pinch zoom and two-finger pan; tap selects, drag moves
+  relative to the finger (no jump) with a loupe showing the spot; hold a wall
+  line to add a point; bigger handles and touch targets; a toolbar with undo /
+  redo, fit, zoom, nudges (×8), Step / Free (Shift / Alt) and Delete. Mouse
+  and keyboard work as before.
+* Phones: the canvas takes most of the screen, the panel below it.
+
 ## 0.2.4
 
 * New games start without a name, and Build / Build & play ask for one first, so

@@ -1,10 +1,11 @@
 import './style.css';
 import { confirmDiscard, openGameFile } from './editor/files';
 import { GuideOverlay } from './editor/guide';
-import { attachInput } from './editor/input';
+import { type TouchMods, attachInput } from './editor/input';
 import { loadModSource, mountPanel, openAsmFiles, refreshFromServer, toast } from './editor/panel';
 import { PlayerOverlay } from './editor/player';
 import { Store } from './editor/store';
+import { mountTouchbar } from './editor/touchbar';
 import { View } from './editor/view';
 
 const store = new Store();
@@ -12,7 +13,9 @@ const view = new View(document.getElementById('view') as HTMLCanvasElement, stor
 const guide = new GuideOverlay(document.getElementById('app')!); // first: its key blocker runs before the others
 const player = new PlayerOverlay(document.getElementById('stage')!);
 const updatePanel = mountPanel(document.getElementById('panel')!, store, view, player);
-attachInput(view, store);
+const touchMods: TouchMods = { step: false, free: false };
+const touchbar = mountTouchbar(document.getElementById('stage')!, store, view, touchMods);
+attachInput(view, store, touchMods, (on) => touchbar.setVisible(on));
 // the game and the guide take the keyboard: pause editor shortcuts while one is shown
 const pauseInput = () => (store.inputPaused = player.isOpen || guide.isOpen);
 player.onOpen = () => (store.inputPaused = true);
@@ -36,6 +39,7 @@ store.onChange(() => {
   view.rebuildTerrain();
   view.requestDraw();
   updatePanel();
+  touchbar.update();
 });
 
 // drop a game (.json) or .asm files anywhere

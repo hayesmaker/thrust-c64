@@ -63,9 +63,21 @@ pre b { color: var(--text); }
 #toast { position: fixed; right: 380px; bottom: 36px; background: var(--panel-2); border: 1px solid var(--accent);
   padding: 8px 12px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 420px; }
 #toast.show { opacity: 1; }
+/* touch toolbar over the canvas (src/editor/touchbar.ts) */
+#touchbar { position: absolute; left: 70px; right: 6px; bottom: 30px; display: none; flex-wrap: wrap;
+  gap: 6px; justify-content: center; pointer-events: none; }
+#touchbar.show { display: flex; }
+#touchbar .group { display: flex; gap: 4px; padding: 4px; border-radius: 10px; pointer-events: auto;
+  background: rgba(21, 21, 29, 0.88); border: 1px solid var(--line); }
+#touchbar .group.sel { display: none; }
+#touchbar.has-sel .group.sel { display: flex; }
+#touchbar button { min-width: 40px; height: 40px; padding: 0 10px; font-size: 16px; touch-action: manipulation; }
+#touchbar button.on { background: var(--accent); color: #fff; }
+#touchbar button.danger { color: var(--warn); }
+#touchbar button[hidden] { display: none; }
 @media (max-width: 800px) {
-  #app { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; }
-  #stage { height: 60vh; }
+  #app { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
+  #stage { height: calc(100dvh - 160px); min-height: 320px; }
   #panel { border-left: 0; border-top: 1px solid var(--line); }
   #toast { right: 16px; }
 }

@@ -11,6 +11,14 @@
 //   drag empty space      pan            wheel: scroll, Ctrl+wheel: zoom
 //   arrows                nudge selected (Shift: x8)
 //   Ctrl+Z / Ctrl+Shift+Z undo / redo    F: fit level   1-6: level
+//
+// Touch (pointerType "touch"; the mouse and pen work as above):
+//   tap                   select (tap empty space: deselect)
+//   drag                  move what is under the finger, relative to where it
+//                         was grabbed (no jump); a loupe shows the spot
+//   drag empty space      pan            two fingers: pan + pinch zoom
+//   hold a wall line      add a point there (then drag it)
+//   touch toolbar         Step / Free stand in for Shift / Alt (TouchMods)
 
 import {
   deleteDoor,
@@ -25,8 +33,15 @@ import {
   movePoint,
   moveRestart,
 } from './ops';
+import { LONG_PRESS_MS, MOUSE_HIT, type Pt, TOUCH_HIT, isDrag, pinchStep } from './gesture';
 import { type Selection, type Store, sameSelection } from './store';
 import { type View } from './view';
+
+/** The touch toolbar's stand-ins for Shift (step) and Alt (free). */
+export interface TouchMods {
+  step: boolean;
+  free: boolean;
+}
 
 type Drag =
   | { kind: 'point'; side: 'left' | 'right'; index: number; tile: number }
@@ -84,9 +99,33 @@ export function nudgeSelection(store: Store, dx: number, dr: number, snap: boole
   else store.changed();
 }
 
-export function attachInput(view: View, store: Store): void {
+export function attachInput(
+  view: View,
+  store: Store,
+  mods: TouchMods = { step: false, free: false },
+  onTouchMode: (on: boolean) => void = () => {},
+): void {
   const canvas = view.canvas;
   let drag: Drag | null = null;
+
+  /** Finger or mouse: bigger hit areas and handles, and the touch toolbar. */
+  const setTouchMode = (on: boolean) => {
+    view.hitRadius = on ? TOUCH_HIT : MOUSE_HIT;
+    if (view.touchMode === on) return;
+    view.touchMode = on;
+    onTouchMode(on);
+    view.requestDraw();
+  };
+
+  /** Keep getting a pointer's events outside the canvas (not possible for a
+   *  pointer that is already gone, or a synthetic one). */
+  const capture = (id: number) => {
+    try {
+      canvas.setPointerCapture(id);
+    } catch {
+      // ignore
+    }
+  };
 
   const pos = (e: MouseEvent) => {
     const r = canvas.getBoundingClientRect();
@@ -106,13 +145,59 @@ export function attachInput(view: View, store: Store): void {
     return null;
   };
 
+  /** Move the dragged thing to world position `w` (shift / alt: the modifiers). */
+  const applyDrag = (d: Exclude<Drag, { kind: 'pan' }>, w: { x: number; row: number }, shift: boolean, alt: boolean) => {
+    const l = store.current;
+    if (!l) return;
+    let ok = false;
+    if (d.kind === 'point') ok = movePoint(l[d.side], d.index, w.row, w.x - d.tile, shift);
+    else if (d.kind === 'object') {
+      const snap = store.snapObjects !== alt;
+      ok = moveObject(l, d.index, w.x - d.tile - d.grabX, w.row - d.grabY, snap, store.decoded);
+    } else if (d.kind === 'door' && l.door) {
+      const dx = Math.round(w.x - d.startX);
+      const dr = Math.round(w.row - d.startRow);
+      const before = JSON.stringify(l.door);
+      if (d.index < 0) {
+        // the whole door; Shift: sideways only
+        l.door.rows = d.rows.slice();
+        l.door.top = d.top;
+        moveDoor(l, shift ? d.top : d.top + dr, dx);
+      } else if (shift) {
+        l.door.rows = d.rows.slice();
+        moveDoor(l, l.door.top, dx);
+      } else {
+        l.door.rows = d.rows.slice();
+        moveDoorRow(l, d.index, d.rows[d.index] + dx);
+      }
+      ok = JSON.stringify(l.door) !== before;
+    } else if (d.kind === 'restart') ok = moveRestart(l, d.index, w.x - d.tile, w.row);
+    if (ok && d.kind === 'point') store.terrainChanged();
+    else if (ok) store.changed();
+  };
+
+  /** The drag for a hit (as a mouse press starts it), at world position w. */
+  const dragFor = (hit: NonNullable<ReturnType<typeof hitAny>>, w: { x: number; row: number }): Exclude<Drag, { kind: 'pan' }> => {
+    const s = hit.sel;
+    const l = store.current!;
+    return s.kind === 'point'
+      ? { kind: 'point', side: s.side, index: s.index, tile: hit.tile }
+      : s.kind === 'object'
+        ? { kind: 'object', index: s.index, tile: hit.tile, grabX: hit.grab!.x, grabY: hit.grab!.y }
+        : s.kind === 'door'
+          ? { kind: 'door', index: s.index, tile: hit.tile, startX: w.x, startRow: w.row, top: l.door!.top, rows: l.door!.rows.slice() }
+          : { kind: 'restart', index: s.index, tile: hit.tile };
+  };
+
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return touchDown(e);
+    setTouchMode(false);
     const l = store.current;
     if (!l) return;
     const p = pos(e);
-    canvas.setPointerCapture(e.pointerId);
+    capture(e.pointerId);
 
     if (e.button === 2) {
       const hit = hitAny(p.x, p.y);
@@ -131,16 +216,7 @@ export function attachInput(view: View, store: Store): void {
     if (hit) {
       store.checkpoint();
       store.selection = hit.sel;
-      const s = hit.sel;
-      const w = view.toWorld(p.x, p.y);
-      drag =
-        s.kind === 'point'
-          ? { kind: 'point', side: s.side, index: s.index, tile: hit.tile }
-          : s.kind === 'object'
-            ? { kind: 'object', index: s.index, tile: hit.tile, grabX: hit.grab!.x, grabY: hit.grab!.y }
-            : s.kind === 'door'
-              ? { kind: 'door', index: s.index, tile: hit.tile, startX: w.x, startRow: w.row, top: l.door!.top, rows: l.door!.rows.slice() }
-              : { kind: 'restart', index: s.index, tile: hit.tile };
+      drag = dragFor(hit, view.toWorld(p.x, p.y));
       store.changed(false);
       return;
     }
@@ -159,6 +235,8 @@ export function attachInput(view: View, store: Store): void {
   });
 
   canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return touchMove(e);
+    if (e.pointerType === 'mouse') setTouchMode(false);
     const p = pos(e);
     const w = view.toWorld(p.x, p.y);
     view.cursor = w;
@@ -169,31 +247,7 @@ export function attachInput(view: View, store: Store): void {
       drag.lastX = p.x;
       drag.lastY = p.y;
     } else if (drag && l) {
-      let ok = false;
-      if (drag.kind === 'point') ok = movePoint(l[drag.side], drag.index, w.row, w.x - drag.tile, e.shiftKey);
-      else if (drag.kind === 'object') {
-        const snap = store.snapObjects !== e.altKey;
-        ok = moveObject(l, drag.index, w.x - drag.tile - drag.grabX, w.row - drag.grabY, snap, store.decoded);
-      } else if (drag.kind === 'door' && l.door) {
-        const dx = Math.round(w.x - drag.startX);
-        const dr = Math.round(w.row - drag.startRow);
-        const before = JSON.stringify(l.door);
-        if (drag.index < 0) {
-          // the whole door; Shift: sideways only
-          l.door.rows = drag.rows.slice();
-          l.door.top = drag.top;
-          moveDoor(l, e.shiftKey ? drag.top : drag.top + dr, dx);
-        } else if (e.shiftKey) {
-          l.door.rows = drag.rows.slice();
-          moveDoor(l, l.door.top, dx);
-        } else {
-          l.door.rows = drag.rows.slice();
-          moveDoorRow(l, drag.index, drag.rows[drag.index] + dx);
-        }
-        ok = JSON.stringify(l.door) !== before;
-      } else if (drag.kind === 'restart') ok = moveRestart(l, drag.index, w.x - drag.tile, w.row);
-      if (ok && drag.kind === 'point') store.terrainChanged();
-      else if (ok) store.changed();
+      applyDrag(drag, w, e.shiftKey, e.altKey);
     } else {
       const hit = hitAny(p.x, p.y);
       const next = hit?.sel ?? null;
@@ -215,12 +269,179 @@ export function attachInput(view: View, store: Store): void {
     }
     drag = null;
   };
-  canvas.addEventListener('pointerup', end);
-  canvas.addEventListener('pointercancel', end);
-  canvas.addEventListener('pointerleave', () => {
+  canvas.addEventListener('pointerup', (e) => (e.pointerType === 'touch' ? touchUp(e) : end()));
+  canvas.addEventListener('pointercancel', (e) => (e.pointerType === 'touch' ? touchUp(e) : end()));
+  canvas.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'touch') return;
     view.cursor = null;
     view.requestDraw();
   });
+
+  // ---- touch -------------------------------------------------------------
+
+  /** What is under a finger: the nearest thing (the bigger radius reaches
+   *  several), ties going by the mouse's priority order. */
+  const hitTouch = (x: number, y: number): ReturnType<typeof hitAny> => {
+    const cands: { d: number; hit: NonNullable<ReturnType<typeof hitAny>> }[] = [];
+    const p = view.hitPoint(x, y);
+    if (p) cands.push({ d: p.d, hit: { sel: { kind: 'point', side: p.side, index: p.index }, tile: p.tile, grab: null } });
+    const d = view.hitDoor(x, y);
+    if (d) cands.push({ d: d.d + 1, hit: { sel: { kind: 'door', index: d.index }, tile: d.tile, grab: null } });
+    const r = view.hitRestart(x, y);
+    if (r) cands.push({ d: r.d + 2, hit: { sel: { kind: 'restart', index: r.index }, tile: r.tile, grab: null } });
+    const o = view.hitObject(x, y);
+    if (o) cands.push({ d: o.d + 3, hit: { sel: { kind: 'object', index: o.index }, tile: o.tile, grab: { x: o.grabX, y: o.grabY } } });
+    cands.sort((a, b) => a.d - b.d);
+    return cands[0]?.hit ?? null;
+  };
+
+  const fingers = new Map<number, Pt>();
+  /** The one-finger gesture: pending (tap or hold) until it moves. */
+  let t: {
+    id: number;
+    start: Pt;
+    last: Pt;
+    hit: ReturnType<typeof hitAny>;
+    seg: ReturnType<View['hitSegment']>;
+    mode: 'pending' | 'drag' | 'pan';
+    timer: number;
+    drag: Exclude<Drag, { kind: 'pan' }> | null;
+    /** world position of the finger, and of the dragged point / restart, when the drag began */
+    w0: { x: number; row: number };
+    origin: { x: number; row: number } | null;
+  } | null = null;
+  let pinch: { a: Pt; b: Pt } | null = null;
+  /** After a pinch, fingers do nothing until all are lifted. */
+  let settled = false;
+
+  const startTouchDrag = (hit: NonNullable<ReturnType<typeof hitAny>>) => {
+    const l = store.current;
+    if (!t || !l) return;
+    store.checkpoint();
+    store.selection = hit.sel;
+    // from where the finger went down, so the slop doesn't make it jump
+    t.w0 = view.toWorld(t.start.x, t.start.y);
+    t.drag = dragFor(hit, t.w0);
+    const s = hit.sel;
+    t.origin =
+      s.kind === 'point'
+        ? { x: l[s.side].points[s.index].x, row: l[s.side].points[s.index].row }
+        : s.kind === 'restart'
+          ? { x: l.restarts[s.index].shipX, row: l.restarts[s.index].shipY }
+          : null;
+    t.mode = 'drag';
+    store.changed(false);
+  };
+
+  const longPress = () => {
+    const l = store.current;
+    if (!t || t.mode !== 'pending' || !t.seg || !l) return;
+    const seg = t.seg;
+    store.checkpoint();
+    if (!insertPoint(l[seg.side], seg.index, seg.row, seg.x)) return store.cancelCheckpointIfUnchanged();
+    store.selection = { kind: 'point', side: seg.side, index: seg.index };
+    navigator.vibrate?.(10);
+    t.mode = 'drag';
+    t.drag = { kind: 'point', side: seg.side, index: seg.index, tile: seg.tile };
+    t.w0 = view.toWorld(t.last.x, t.last.y);
+    t.origin = { x: seg.x, row: seg.row };
+    view.loupe = { sx: t.last.x, sy: t.last.y, x: seg.x + seg.tile, row: seg.row };
+    store.terrainChanged();
+  };
+
+  function touchDown(e: PointerEvent): void {
+    setTouchMode(true);
+    if (!store.current) return;
+    capture(e.pointerId);
+    const p = pos(e);
+    fingers.set(e.pointerId, p);
+    if (fingers.size === 2) {
+      // a second finger: pan / zoom; undo whatever the first one started
+      if (t) {
+        clearTimeout(t.timer);
+        if (t.mode === 'drag') store.abandonCheckpoint();
+      }
+      t = null;
+      view.loupe = null;
+      const [a, b] = [...fingers.values()];
+      pinch = { a, b };
+      settled = true;
+      view.requestDraw();
+      return;
+    }
+    if (fingers.size > 1 || settled) return;
+    const hit = hitTouch(p.x, p.y);
+    const seg = hit ? null : view.hitSegment(p.x, p.y);
+    t = { id: e.pointerId, start: p, last: p, hit, seg, mode: 'pending', timer: 0, drag: null, w0: view.toWorld(p.x, p.y), origin: null };
+    if (seg) t.timer = window.setTimeout(longPress, LONG_PRESS_MS);
+  }
+
+  function touchMove(e: PointerEvent): void {
+    const prev = fingers.get(e.pointerId);
+    if (!prev) return;
+    const p = pos(e);
+    fingers.set(e.pointerId, p);
+    if (pinch) {
+      const [a, b] = [...fingers.values()];
+      const s = pinchStep(pinch.a, pinch.b, a, b);
+      view.pan(s.dx, s.dy);
+      view.zoomAt(s.cx, s.cy, s.zoom);
+      pinch = { a, b };
+      return;
+    }
+    if (!t || t.id !== e.pointerId) return;
+    t.last = p;
+    if (t.mode === 'pending') {
+      if (!isDrag(t.start, p)) return;
+      clearTimeout(t.timer);
+      if (t.hit) startTouchDrag(t.hit);
+      else t.mode = 'pan';
+    }
+    if (t.mode === 'pan') {
+      view.pan(p.x - prev.x, p.y - prev.y);
+      return;
+    }
+    if (!t.drag) return;
+    // relative: the thing moves as far as the finger did, from where it was
+    const w = view.toWorld(p.x, p.y);
+    const target = t.origin ? { x: t.origin.x + t.drag.tile + (w.x - t.w0.x), row: t.origin.row + (w.row - t.w0.row) } : w;
+    applyDrag(t.drag, target, mods.step, mods.free);
+    view.cursor = target;
+    // magnify the point or restart where it ended up (moves snap to whole units)
+    const l = store.current!;
+    const d = t.drag;
+    const at =
+      d.kind === 'point'
+        ? { x: l[d.side].points[d.index].x + d.tile, row: l[d.side].points[d.index].row }
+        : d.kind === 'restart'
+          ? { x: l.restarts[d.index].shipX + d.tile, row: l.restarts[d.index].shipY }
+          : w;
+    view.loupe = { sx: p.x, sy: p.y, x: at.x, row: at.row };
+    view.requestDraw();
+    statusUpdate();
+  }
+
+  function touchUp(e: PointerEvent): void {
+    fingers.delete(e.pointerId);
+    if (pinch && fingers.size < 2) pinch = null;
+    if (fingers.size === 0) settled = false;
+    if (!t || t.id !== e.pointerId) return;
+    clearTimeout(t.timer);
+    if (t.mode === 'pending' && e.type === 'pointerup') {
+      // a tap: select what is there, or deselect
+      if (t.hit) {
+        store.selection = t.hit.sel;
+        store.changed(false);
+      } else if (store.selection) {
+        store.selection = null;
+        store.changed(false);
+      }
+    } else if (t.mode === 'drag') store.cancelCheckpointIfUnchanged();
+    t = null;
+    view.loupe = null;
+    view.cursor = null;
+    view.requestDraw();
+  }
 
   canvas.addEventListener(
     'wheel',
