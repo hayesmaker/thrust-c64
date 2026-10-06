@@ -1,5 +1,10 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* Link previews: description, Open Graph and Twitter card tags, and a preview
+  image (`public/og-image.png`, made from `docs/og/card.html`).
+
 ## 0.2.1
 
 * Fix: `deploy.sh` (update.sh over a plain ssh command) found neither fnm nor pm2.
