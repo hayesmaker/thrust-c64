@@ -127,6 +127,10 @@ file can't be found, not print a number.
 
 ### Sandbox fails
 
+Debian: if the error mentions namespaces or "Operation not permitted", unprivileged
+user namespaces are off. Check `sysctl kernel.unprivileged_userns_clone`; if it is 0:
+`echo kernel.unprivileged_userns_clone=1 | sudo tee /etc/sysctl.d/90-userns.conf && sudo sysctl --system`.
+
 Ubuntu 23.10 and later can stop unprivileged programs from using user namespaces, which
 bubblewrap needs. Check with `sysctl kernel.apparmor_restrict_unprivileged_userns`. If it
 is 1 and `provision.sh`'s sandbox check fails, allow bwrap with an AppArmor profile:
