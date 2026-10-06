@@ -1,6 +1,6 @@
 # Changelog: Thrust level editor
 
-## Unreleased
+## 0.2.2
 
 * Link previews: description, Open Graph and Twitter card tags, and a preview
   image (`public/og-image.png`, made from `docs/og/card.html`).
