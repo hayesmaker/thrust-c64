@@ -15,10 +15,16 @@ main() {
   if [ -n "$fnm" ]; then eval "$("$fnm" env --shell bash)"
   elif [ -s "$HOME/.nvm/nvm.sh" ]; then . "$HOME/.nvm/nvm.sh"
   fi
-  # pm2 lives with the default Node: find it before switching to the editor's
-  local pm2; pm2=$(command -v pm2 || true)
-  [ -n "$pm2" ] || { echo "pm2 not found (is it installed for the default Node?)"; exit 1; }
-  pm2=$(readlink -f "$pm2")
+  # pm2 may belong to any Node (nvm, fnm, system): find it before switching to the
+  # editor's Node, and run it with the Node it was installed with
+  local pm2bin pm2node
+  pm2bin=$(command -v pm2 || ls -d "$HOME"/.nvm/versions/node/*/bin/pm2 \
+    "$HOME"/.local/share/fnm/node-versions/*/installation/bin/pm2 2>/dev/null | tail -1 || true)
+  [ -n "$pm2bin" ] || { echo "pm2 not found (looked on PATH, in ~/.nvm and in fnm's Node versions)"; exit 1; }
+  pm2node=$(readlink -f "$(dirname "$pm2bin")/node" || true)
+  [ -x "$pm2node" ] || pm2node=$(command -v node)
+  pm2bin=$(readlink -f "$pm2bin")
+  pm2() { "$pm2node" "$pm2bin" "$@"; }
 
   if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo "the checkout has local changes: not deploying"; git status --short; exit 1
@@ -47,8 +53,8 @@ main() {
 
   echo "→ switch"
   rm -rf dist.old; [ -d dist ] && mv dist dist.old; mv dist.new dist
-  "$pm2" startOrReload "$root/deploy/ecosystem.config.cjs" --update-env
-  "$pm2" save >/dev/null
+  pm2 startOrReload "$root/deploy/ecosystem.config.cjs" --update-env
+  pm2 save >/dev/null
   trap - ERR
 
   for _ in 1 2 3 4 5 6 7 8 9 10; do
