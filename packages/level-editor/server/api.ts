@@ -18,9 +18,14 @@ export interface ApiOptions {
   /** packages/thrusty-levels/src */
   modDir: string;
   kickass?: string;
+  /** the command that runs KickAssembler's jar: java, or a sandbox wrapper (deploy/kickass-sandbox.sh) */
   java?: string;
   buildsDir?: string;
   keepBuilds?: number;
+  /** a build is killed after this long */
+  timeoutMs?: number;
+  /** builds waiting or running; more get 503 */
+  maxQueue?: number;
 }
 
 export interface BuildError {
@@ -109,10 +114,13 @@ export function patchStartLevel(prg: Uint8Array, sym: string, level: number): Ui
 
 export function createApi(o: ApiOptions) {
   const kickass = o.kickass ?? process.env.KICKASS ?? '/opt/KickAss.jar';
-  const java = o.java ?? 'java';
-  const buildsDir = o.buildsDir ?? join(tmpdir(), 'thrust-level-editor', 'builds');
+  const java = o.java ?? process.env.KICKASS_JAVA ?? 'java';
+  const buildsDir = o.buildsDir ?? process.env.BUILDS_DIR ?? join(tmpdir(), 'thrust-level-editor', 'builds');
   const keepBuilds = o.keepBuilds ?? 12;
+  const timeoutMs = o.timeoutMs ?? Number(process.env.BUILD_TIMEOUT_MS ?? 120_000);
+  const maxQueue = o.maxQueue ?? Number(process.env.BUILD_MAX_QUEUE ?? 8);
   let queue: Promise<unknown> = Promise.resolve();
+  let pending = 0;
 
   const readSource = () => {
     const levelsAsm = readFileSync(join(o.modDir, SOURCE_FILES.levelsAsm), 'utf8');
@@ -140,12 +148,16 @@ export function createApi(o: ApiOptions) {
       execFile(
         java,
         ['-jar', kickass, join(dir, 'src', 'thrust.asm'), '-odir', '../out', '-vicesymbols', '-symbolfile'],
-        { cwd: dir, timeout: 120_000, maxBuffer: 16 * 1024 * 1024 },
+        { cwd: dir, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 },
         (err, stdout, stderr) => {
-          const log = `${stdout}${stderr}${err && !stdout && !stderr ? String(err) : ''}`;
+          const timedOut = !!err && err.killed;
+          let log = `${stdout}${stderr}${err && !stdout && !stderr && !timedOut ? String(err) : ''}`;
+          if (timedOut) log += `\n[editor] build stopped after ${timeoutMs / 1000} s\n`;
           writeFileSync(join(out, 'kickass.log'), log);
           const prgPath = join(out, 'thrust.prg');
           const errors = parseKickAssErrors(log);
+          if (timedOut)
+            errors.push({ message: `build took longer than ${timeoutMs / 1000} s`, line: 0, column: 0, file: 'thrust.asm' });
           const ok = !err && existsSync(prgPath) && errors.length === 0;
           const res: BuildResult = { id, ok, errors, log, ms: 0, files: ['kickass.log'], startLevel: null };
           if (ok) {
@@ -186,7 +198,9 @@ export function createApi(o: ApiOptions) {
           return json(res, 400, { error: 'levelsAsm and tablesAsm are required' });
         const { levelsAsm, tablesAsm } = body;
         const start = Number.isInteger(body.startLevel) ? Number(body.startLevel) : null;
-        const run = queue.then(() => runBuild(levelsAsm, tablesAsm, start));
+        if (pending >= maxQueue) return json(res, 503, { error: 'the build server is busy: try again in a moment' });
+        pending++;
+        const run = queue.then(() => runBuild(levelsAsm, tablesAsm, start)).finally(() => pending--);
         queue = run.catch(() => undefined);
         return json(res, 200, await run);
       }
