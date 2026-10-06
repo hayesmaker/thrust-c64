@@ -133,16 +133,29 @@ textarea { width: 100%; box-sizing: border-box; background: var(--bg); color: va
 .meter.over > div { background: var(--warn); }
 .meter .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--muted); }
 
-/* phase 4/5: emulator overlay. Always the whole screen (the browser's full
-   screen, or covering the page); the game fills it, and the few buttons, the
-   on-screen pad and short messages float over it. */
-#play { position: fixed; inset: 0; background: #000; z-index: 50; }
+/* phase 4/5: emulator overlay. Windowed: over the map, a bar above the game
+   and the keys below it. .full ("play full screen"): the whole screen (the
+   browser's full screen, or covering the page); the game fills it, and the
+   few buttons, the on-screen pad and short messages float over it. */
+#play { position: absolute; inset: 0 0 24px 0; background: #000d; z-index: 5; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px; padding: 16px; }
 #play[hidden] { display: none; }
+.play-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: min(100%, 960px); }
+.play-top .spacer { flex: 1; }
+.play-screen { position: relative; width: min(100%, 960px); aspect-ratio: 384 / 272; max-height: calc(100% - 110px); }
+#play-canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; background: #000;
+  display: block; }
+.play-help { color: var(--muted); font-size: 12px; text-align: center; max-width: 960px; }
+#play.pad .play-help { display: none; }
+#play.full { position: fixed; inset: 0; background: #000; z-index: 50; display: block; padding: 0; }
+#play.full .play-top, #play.full .play-help { display: none; }
+#play.full .play-screen { position: absolute; inset: 0; width: auto; max-height: none; aspect-ratio: auto; }
 body.playing { overflow: hidden; }
-#play-canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
-  image-rendering: pixelated; background: #000; display: block; }
+/* over the game: windowed only Pad and Pause (Close is in the bar above) */
 .play-bar { position: absolute; top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left));
   display: flex; gap: 6px; z-index: 1; }
+#play:not(.full) .play-bar { top: 8px; left: 8px; }
+#play:not(.full) #play-x { display: none; }
 .play-bar button { padding: 6px 10px; min-width: 40px; min-height: 36px; background: #0008; border-color: #ffffff30;
   color: #ffffffb0; opacity: .6; }
 .play-bar button:hover, .play-bar button:focus-visible { opacity: 1; }

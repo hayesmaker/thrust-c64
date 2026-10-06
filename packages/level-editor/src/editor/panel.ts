@@ -42,6 +42,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 const C64READY_KEY = 'thrust-level-editor:c64ready-url';
 const C64READY_DEFAULT = 'https://hayesmaker.github.io/c64-ready/';
+const FULLSCREEN_KEY = 'thrust-level-editor:play-fullscreen';
 
 export function mountPanel(root: HTMLElement, store: Store, view: View, player: PlayerOverlay): () => void {
   root.innerHTML = `
@@ -84,6 +85,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       <h2>Build and play</h2>
       <div id="p-mem-banner" hidden></div>
       <label><input type="checkbox" id="p-start-here" checked> start the game on this level</label>
+      <label><input type="checkbox" id="p-fullscreen"> play full screen</label>
       <div class="row">
         <button id="p-play" class="primary" title="Ctrl+Enter">Build &amp; play</button>
         <button id="p-build">Build</button>
@@ -429,7 +431,7 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
     }
     building = true;
     // full screen needs the click itself, so the player opens before the build
-    if (play) player.open();
+    if (play) player.open(fullscreen.checked);
     const levelNo = store.level;
     const startHere = $<HTMLInputElement>('p-start-here').checked;
     const out = saveProject(p, { title: store.name, author: store.author });
@@ -459,7 +461,13 @@ export function mountPanel(root: HTMLElement, store: Store, view: View, player: 
       building = false;
     }
   }
+  // full screen by default on phones and tablets; the choice is remembered
+  const fullscreen = $<HTMLInputElement>('p-fullscreen');
+  const fsPref = readPref(FULLSCREEN_KEY);
+  fullscreen.checked = fsPref ? fsPref === 'on' : matchMedia('(pointer: coarse)').matches;
+  fullscreen.onchange = () => writePref(FULLSCREEN_KEY, fullscreen.checked ? 'on' : 'off');
   $('p-play').onclick = () => runBuild(true);
+  player.onRebuild = () => runBuild(true);
   $('p-build').onclick = () => runBuild(false);
   window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !player.isOpen) {

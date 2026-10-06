@@ -389,9 +389,12 @@ room. The quickest savings are dashed slopes: make them even with Shift-drag.
 ![Playing level 3 in the built-in emulator](img/play.png)
 
 **Build & play** (or **Ctrl + Enter**) builds the game with your changes and
-starts it in the built-in C64 emulator, full screen. It takes about a second.
+starts it in the built-in C64 emulator, over the map. It takes about a second.
 The build uses a temporary copy of the mod; nothing is written to the mod's
-files. If the build fails, the player closes and the panel shows the errors.
+files. If the build fails, the panel shows the errors.
+
+Tick **play full screen** to play on the whole screen instead (the box is
+ticked to begin with on phones and tablets, and the browser remembers it).
 
 With **start the game on this level** ticked (the default), the game starts on
 the level you are editing, so you do not have to play through the others.
@@ -418,18 +421,23 @@ is for touch screens: it is shown on phones and tablets and hidden on
 computers. **Pad** shows or hides it, e.g. to play a phone with a Bluetooth
 gamepad; the browser remembers the choice.
 
-While the game is shown, the editor's own keys are switched off. The game
-fills the screen; three small buttons float in its top-left corner:
+While the game is shown, the editor's own keys are switched off. Over the
+map, the buttons above the game:
 
-* **✕**: close, back to the editor. To try an edit, close, edit and
-  **Build & play** again.
-* **Pad**: show or hide the on-screen pad.
-* **Pause / Resume**.
+* **Rebuild**: build your latest edits and restart. Edit, rebuild, try again.
+* **Restart**: run the same build again.
+* **Sound off / on**.
+* **Close**: back to the editor.
 
-If the browser leaves full screen (Esc on a computer, or the back gesture on a
-phone), tap the game to go full screen again. On an iPhone, where pages cannot
-go full screen, the game covers the whole page instead; turning the phone
-sideways gives the biggest picture.
+and in the game's top-left corner **Pad** (show or hide the on-screen pad) and
+**Pause / Resume**.
+
+Full screen, the game fills the screen and only three small buttons float in
+its top-left corner: **✕** (close), **Pad** and **Pause / Resume**. To try an
+edit, close, edit and **Build & play** again. If the browser leaves full screen
+(Esc on a computer, or the back gesture on a phone), tap the game to go full
+screen again. On an iPhone, where pages cannot go full screen, the game covers
+the whole page instead; turning the phone sideways gives the biggest picture.
 
 **Build** only builds, without playing, e.g. to check for errors. If the build
 fails, the panel lists the errors with the table they are in, and the full

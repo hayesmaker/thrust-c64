@@ -1,5 +1,12 @@
 # Changelog: Thrust level editor
 
+## Unreleased
+
+* Build & play plays over the map again, as before 0.3 (Rebuild, Restart,
+  Sound, Close; the panel beside it). New **play full screen** box under it
+  for the full-screen player; ticked to begin with on phones and tablets, and
+  remembered.
+
 ## 0.3.2
 
 * Opening a game file (or the autosave) keeps its name and author the way the
